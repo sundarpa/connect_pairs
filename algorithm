@@ -1,0 +1,6 @@
+Let's create a program for finding the pattern among strings called vectors using python
+Here's the rule when we do this, at the end of every request please summarise what is been done so far.
+Assume the input vector contains strings which are separated by underscore which has up to 6 to 7 words.
+Each word contains length of up to 3 to 5 characters.
+The 4th and 5th word has some patterns that get's repeated after every 20 vectors.
+Give me those examples.

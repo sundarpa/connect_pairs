@@ -4,3 +4,10 @@ Assume the input vector contains strings which are separated by underscore which
 Each word contains length of up to 3 to 5 characters.
 The 4th and 5th word has some patterns that get's repeated after every 20 vectors.
 Give me those examples.
+
+Assume a string that contains 7 words separated by _ next split those words using _ and assign the rows as columns for the data frame.
+Name the columns as column 123 up to seven . 
+If column three contains the word INI then filter and get only that value and assign it to a temporary  table.
+
+Assume there is another table that contains two columns called column A and column B .
+Now join these two tables by combining column a = column 4 column B = column 5.

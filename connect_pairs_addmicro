@@ -1,67 +1,90 @@
 import pandas as pd
+from io import StringIO
 
-# Generate 20 example strings
-example_strings = [
-    "word1_word2_INI_corei1_coreia1_word6_word7",
-    "word1_word2_INI_corei2_coreia2_word6_word7",
-    "word1_word2_INI_corei3_coreia3_word6_word7",
-    "word1_word2_INI_corei4_coreia4_word6_word7",
-    "word1_word2_INI_corei5_coreia5_word6_word7",
-    "word1_word2_body_coreb1_coreba1_word6_word7",
-    "word1_word2_body_corebw1_corebaq1_word6_word7",
-    "word1_word2_body_corebr1_corebat1_word6_word7",
-    "word1_word2_body_corebx2_corebay2_word6_word7",
-    "word1_word2_body_coreb3_coreba3_word6_word7",
-    "word1_word2_body_coreb4_coreba4_word6_word7",
-    "word1_word2_body_coreb5_coreba5_word6_word7",
-    "word1_word2_body_coreby_corebay_word6_word7",
-    "word1_word2_body1_coreb1_coreba1_word6_word7",
-    "word1_word2_body1_corebw1_corebaq1_word6_word7",
-    "word1_word2_body1_corebr1_corebat1_word6_word7",
-    "word1_word2_body1_corebx2_corebay2_word6_word7",
-    "word1_word2_body1_coreb3_coreba3_word6_word7",
-    "word1_word2_body1_coreb4_coreba4_word6_word7",
-    "word1_word2_body1_coreb5_coreba5_word6_word7",
-    "word1_word2_body1_coreby_corebay_word6_word7",
-]
-
-# Split the strings into two lists: ini_vectors and body_vectors
-ini_vectors = []
-body_vectors = []
-
-for string in example_strings:
-    words = string.split("_")
-    if "INI" in words[2]:
-        ini_vectors.append(words)
-    else:
-        body_vectors.append(words)
-
-# Create DataFrames for ini_vectors and body_vectors
-ini_df = pd.DataFrame(ini_vectors, columns=["column 1", "column 2", "column 3", "column 4", "column 5", "column 6", "column 7"])
-body_df = pd.DataFrame(body_vectors, columns=["column 1", "column 2", "column 3", "column 4", "column 5", "column 6", "column 7"])
-
-# Create a mapping table from a CSV file
-mapping_csv = """ini_core1,ini_core2,body_core1,body_core2
-"corei1,coreia1,coreb1,coreba1",
-"corei1,coreia1,corebw1,corebaq1",
-"corei1,coreia1,corebr1,corebat1",
-"corei2,coreia2,corebx2,corebay2",
-"corei3,coreia3,coreb3,coreba3",
-"corei4,coreia4,coreb4,coreba4",
-"corei5,coreia5,coreb5,coreba5",
-"corei5,coreia5,coreby,corebay"
+# Input vectors CSV content
+input_vectors_csv = """col1_col2_col3_col4_col5_col6_col7
+word1_word2_INI_corei1_coreia1_word6_word7
+word1_word2_INI_corei2_coreia2_word6_word7
+word1_word2_INI_corei3_coreia3_word6_word7
+word1_word2_INI_corei4_coreia4_word6_word7
+word1_word2_INI_corei5_coreia5_word6_word7
+word1_word2_body_coreb1_coreba1_word6_word7
+word1_word2_body_corebw1_corebaq1_word6_word7
+word1_word2_body_corebr1_corebat1_word6_word7
+word1_word2_body_corebx2_corebay2_word6_word7
+word1_word2_body_coreb3_coreba3_word6_word7
+word1_word2_body_coreb4_coreba4_word6_word7
+word1_word2_body_coreb5_coreba5_word6_word7
+word1_word2_body_coreby_corebay_word6_word7
+word1_word2_body1_coreb1_coreba1_word6_word7
+word1_word2_body1_corebw1_corebaq1_word6_word7
+word1_word2_body1_corebr1_corebat1_word6_word7
+word1_word2_body1_corebx2_corebay2_word6_word7
+word1_word2_body1_coreb3_coreba3_word6_word7
+word1_word2_body1_coreb4_coreba4_word6_word7
+word1_word2_body1_coreb5_coreba5_word6_word7
+word1_word2_body1_coreby_corebay_word6_word7
+word1_word2_body2_coreb1_coreba1_word6_word7
+word1_word2_body2_corebw1_corebaq1_word6_word7
+word1_word2_body2_corebr1_corebat1_word6_word7
+word1_word2_body2_corebx2_corebay2_word6_word7
+word1_word2_body2_coreb3_coreba3_word6_word7
+word1_word2_body2_coreb4_coreba4_word6_word7
+word1_word2_body2_coreb5_coreba5_word6_word7
+word1_word2_body2_coreby_corebay_word6_word7
+word1_word2_body3_coreb1_coreba1_word6_word7
+word1_word2_body3_corebw1_corebaq1_word6_word7
+word1_word2_body3_corebr1_corebat1_word6_word7
+word1_word2_body3_corebx2_corebay2_word6_word7
+word1_word2_body3_coreb3_coreba3_word6_word7
+word1_word2_body3_coreb4_coreba4_word6_word7
+word1_word2_body3_coreb5_coreba5_word6_word7
+word1_word2_body3_coreby_corebay_word6_word7
 """
 
-# Create the mapping DataFrame from the CSV data
-mapping_df = pd.read_csv(pd.compat.StringIO(mapping_csv))
+# Mapping table CSV content
+mapping_csv = """ini_core1,ini_core2,body_core1,body_core2
+corei1,coreia1,coreb1,coreba1
+corei1,coreia1,corebw1,corebaq1
+corei1,coreia1,corebr1,corebat1
+corei2,coreia2,corebx2,corebay2
+corei3,coreia3,coreb3,coreba3
+corei4,coreia4,coreb4,coreba4
+corei5,coreia5,coreb5,coreba5
+corei5,coreia5,coreby,corebay
+"""
 
-# Join ini_df and mapping_df on column 4, and body_df and mapping_df on column 5
-ini_result = pd.merge(ini_df, mapping_df, left_on="column 4", right_on="ini_core1", how="left")
-body_result = pd.merge(body_df, mapping_df, left_on="column 5", right_on="body_core1", how="left")
+# Use StringIO to create file-like objects for pandas to read from
+input_data = StringIO(input_vectors_csv)
+mapping_data = StringIO(mapping_csv)
 
-# Print the results
-print("ini_result:")
-print(ini_result)
+# Read input vectors and mapping data into DataFrames
+input_df = pd.read_csv(input_data, sep='_')
+mapping_df = pd.read_csv(mapping_data)
 
-print("\nbody_result:")
-print(body_result)
+# Filter rows in input_df containing 'INI' in col3
+init_df = input_df[input_df['col3'] == 'INI']
+
+# Filter rows in input_df containing 'body' in col3
+body_df = input_df[input_df['col3'] != 'INI']
+
+# Join init_df with mapping_df on specified conditions
+init_mapped_df = pd.merge(init_df, mapping_df, left_on=['col4', 'col5'], right_on=['ini_core1', 'ini_core2'])
+
+# Join body_df with mapping_df on specified conditions
+body_mapped_df = pd.merge(body_df, mapping_df, left_on=['col4', 'col5'], right_on=['body_core1', 'body_core2'])
+
+# Print the resulting DataFrames
+print("init_mapped_df:")
+print(init_mapped_df)
+
+print("\nbody_mapped_df:")
+print(body_mapped_df)
+
+
+# Combine init_mapped_df and body_mapped_df column-wise into a single DataFrame named "init_body"
+init_body = pd.concat([init_mapped_df, body_mapped_df], axis=1)
+
+# Print the resulting init_body DataFrame
+print("init_body:")
+print(init_body)

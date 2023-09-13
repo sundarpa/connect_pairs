@@ -71,19 +71,13 @@ body_df = input_df[input_df['col3'] != 'INI']
 # Join init_df with mapping_df on specified conditions
 init_mapped_df = pd.merge(init_df, mapping_df, left_on=['col4', 'col5'], right_on=['ini_core1', 'ini_core2'])
 
-# Join body_df with mapping_df on specified conditions
-body_mapped_df = pd.merge(body_df, mapping_df, left_on=['col4', 'col5'], right_on=['body_core1', 'body_core2'])
-
 # Print the resulting DataFrames
 print("init_mapped_df:")
 print(init_mapped_df)
 
-print("\nbody_mapped_df:")
-print(body_mapped_df)
-
-
 # Combine init_mapped_df and body_mapped_df column-wise into a single DataFrame named "init_body"
-init_body = pd.concat([init_mapped_df, body_mapped_df], axis=1)
+#init_body = pd.concat([init_mapped_df, body_mapped_df], axis=1)
+init_body = pd.merge(init_mapped_df, body_df, left_on=['body_core1', 'body_core2'], right_on=['col4', 'col5'])
 
 # Print the resulting init_body DataFrame
 print("init_body:")

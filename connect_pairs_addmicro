@@ -82,3 +82,6 @@ init_body = pd.merge(init_mapped_df, body_df, left_on=['body_core1', 'body_core2
 # Print the resulting init_body DataFrame
 print("init_body:")
 print(init_body)
+########## Sample references
+#df1['Combined'] = df1.apply(lambda row: f'({row["Name"]})_({row["Age"]})', axis=1)
+#print (df1)

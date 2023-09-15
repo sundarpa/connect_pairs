@@ -85,3 +85,28 @@ print(init_body)
 ########## Sample references
 #df1['Combined'] = df1.apply(lambda row: f'({row["Name"]})_({row["Age"]})', axis=1)
 #print (df1)
+
+
+
+data1 = {'ID': [1, 2, 3],
+         'Name': ['Alice', 'Bob', 'Charlie']}
+
+df1 = pd.DataFrame(data1)
+
+# Sample DataFrame 2
+data2 = {'ID': [2, 3, 4],
+         'Age': [25, 30, 22]}
+
+df2 = pd.DataFrame(data2)
+
+# Merge the DataFrames based on the common 'ID' column
+merged_df = pd.merge(df1, df2, on='ID', how='inner')
+
+# Combine 'Name' and 'Age' columns into a new column
+merged_df['Combined_Column'] = merged_df.apply(lambda row: f'{row["Name"]} ({row["Age"]})', axis=1)
+
+# Drop the original 'Name' and 'Age' columns if needed
+# merged_df.drop(columns=['Name', 'Age'], inplace=True)
+
+# Print the resulting DataFrame
+print(merged_df)

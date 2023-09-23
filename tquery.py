@@ -18,97 +18,36 @@ abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
 
+
 def getopts(argv):
-	
-	opts = {}
-	if set(argv) == {'--h','/released_path/tquery.py'}:
-		argv.append('help')
-		if argv[0][0] == '/':
-			opts[argv[0][2:]] = argv[1]
-		argv = argv[1:]
-		return opts 
-	elif set(argv) == {'--help','/released_path/tquery.py'}:
-		argv.append('h')
-		if argv[0][0] == '/':
-			opts[argv[0][2:]] = argv[1]
-		argv = argv[1:]
-		return opts
-	elif set(argv) == {'--h','/released_path/tquery.py'}:
-		argv.append('help')
-		if argv[0][0] == '/':
-			opts[argv[0][2:]] = argv[1]
-		argv = argv[1:]
-		return opts
-	elif set(argv) == {'--h','/released_path/tquery.py'}:
-		argv.append('help')
-		if argv[0][0] == '/':
-			opts[argv[0][2:]] = argv[1]
-		argv = argv[1:]
-		return opts
-	elif set(argv) == {'--h','/released_path/tquery.py'}:
-		argv.append('help')
-		if argv[0][0] == '/':
-			opts[argv[0][2:]] = argv[1]
-		argv = argv[1:]
-		return opts
-	else:
-		while argv:
-			if argv[0][0] == '-':
-			    opts[argv[0][2:]] = argv[1]  # remove -- from arguments
-			argv = argv[1:]
-		return opts
+    opts = {}
+
+    # Check if the first argument is a file path starting with '/'
+    if argv and argv[0][0] == '/':
+        opts[argv[0][2:]] = argv[1]
+        argv = argv[1:]
+
+    while argv:
+        if argv[0].startswith("--") or argv[0].startswith("-"):
+            option = argv[0][2:]
+            if len(argv) > 1 and not argv[1].startswith("--") and not argv[1].startswith("-"):
+                opts[option] = argv[1]  # Assign the value if available
+                argv = argv[2:]
+            else:
+                opts[option] = None  # Assign None if no value is provided
+                argv = argv[1:]
+        else:
+            print("Error: Invalid argument", argv[0])
+            return opts
+
+    return opts
 
 CONFIG_PATH = "./config.ini"
 
 config = configparser.ConfigParser()
 config.read(CONFIG_PATH)
 
-def decrypt(config_db):
-    dec = []
-    for j in config.sections():
-        if re.match(j, config_db):
-            enc = base64.urlsafe_b64decode(str(config.get(j,'encrypted_password')))
-            for i in range(len(enc)):
-                key_c = (config.get(j,'db'))[i % len((config.get(j,'db')))]
-                dec_c = chr((256 + enc[i] - ord(key_c)) % 256)
-                dec.append(dec_c)
-            decrypted_password = "".join(dec)
-
-            user = config.get(j,'user')
-            host = config.get(j,'host')
-            port = config.get(j,'port')
-            db = config.get(j,'db')
-            stage_dict =  {
-                    'host': str(host),
-                    'port': int(port),
-                    'password': decrypted_password,
-                    'user': str(user),
-                    'db': str(db)
-                }
-            return stage_dict
-
-dbCheck = getopts(argv)
-
-databaseList = []
-with open(CONFIG_PATH, 'r') as fp:
-	data = fp.read()
-supportedDb = re.compile(r'\[(.*?)\]')
-
-for match in supportedDb.finditer(data):
-	databaseList.append(match.group(1))
-
-if not "db" in dbCheck.keys():
-	print("connecting to PROD db")
-	stage_dict = decrypt('PROD')
-elif dbCheck["db"].upper() in databaseList:
-	print("connecting to" , dbCheck['db'], "db")
-	stage_dict = decrypt(str(dbCheck['db'].upper()))
-elif dbCheck["db"].upper() not in databaseList:
-	print("connection failed")
-	print("Please check the connection in config.ini")
-	raise SystemExit
-
-conn = pymysql.connect(host=stage_dict['host'], port=stage_dict['port'], user= stage_dict['user'], passwd=stage_dict['password'], db=stage_dict['db'])
+conn = pymysql.connect(host="localhost", port=3306, user= "root", passwd="QWE#44#rtyuio", db="searchtool")
 
 conn.autocommit(True)
 
@@ -187,156 +126,16 @@ def openquery(myargs):
 			print("###########################################################################################")		
 			print(f"{str}" + "--query" + ' ' + myargs['query'])
 			print("###########################################################################################")
-			
-	elif "query" in myargs.keys() and "help" in myargs.keys() and "h" not in myargs.keys():
-		with open(myargs['query'], 'r') as fp:
-			data = fp.read()
-		regex = re.compile(r'(["])((?:\\.|[^\\d])*?)(\1)')
-	
-		for match in regex.finditer(data):
-			matchList.append(match.group(2))  # add all the required arguments to a list
-	
-		for param in range(len(matchList)):
-			requiredParameters[matchList[param]] = matchList[param]  # converts to required dictionary
-		str = "tquery "
-		if 'help' in myargs:
-			for item in requiredParameters:
-				str += "--" + item + ' ' + '<' + requiredParameters[item] + '>' + ' '
-			print("#############################################################################################")		
-			print(f"{str}" + "--query" + ' ' + myargs['query'])
-			print("#############################################################################################")
-		
-	elif "query" in myargs.keys() and "h" not in myargs.keys():
-		with open(myargs['query'], 'r') as fp:
-			data = fp.read()
-		regex = re.compile(r'(["])((?:\\.|[^\\d])*?)(\1)')
-	
-		for match in regex.finditer(data):
-			matchList.append(match.group(2))  # add all the required arguments to a list
-#		print(matchList)
-	
-		for param in range(len(matchList)):
-			requiredParameters[matchList[param]] = matchList[param]  # converts to required dictionary
-#		print(requiredParameters)
-#		print(myargs.items())
-
-		for key in requiredParameters.keys():
-			if not key in myargs:
-				missingArguments.append(key)
-		if len(missingArguments) > 0:	
-			print("missing arguments : ", missingArguments)
-			raise SystemExit
-			 
-		for k, v in requiredParameters.items():
-			if v in myargs.keys():
-	    			print(f"{k} : {myargs[v]}")  # prints only arguments which are mentioned in query file
-
-		for k, v in myargs.items():
-			data = data.replace(f'"{k}"', f'"{v}"')
-		return data	# returns replaced query
-		
-	elif "query" in myargs.keys() and "help" in myargs.keys() and "h" not in myargs.keys():
-		with open(myargs['query'], 'r') as fp:
-			data = fp.read()
-		regex = re.compile(r'(["])((?:\\.|[^\\d])*?)(\1)')
-	
-		for match in regex.finditer(data):
-			matchList.append(match.group(2))  # add all the required arguments to a list
-	
-		for param in range(len(matchList)):
-			requiredParameters[matchList[param]] = matchList[param]  # converts to required dictionary
-		str = "tquery "
-		if 'help' in myargs:
-			for item in requiredParameters:
-				str += "--" + item + ' ' + '<' + requiredParameters[item] + '>' + ' '
-			print("#############################################################################################")		
-			print(f"{str}" + "--query" + ' ' + myargs['query'])
-			print("#############################################################################################")
-		
-	elif "query" in myargs.keys() and "h" not in myargs.keys():
-		with open(myargs['query'], 'r') as fp:
-			data = fp.read()
-		regex = re.compile(r'(["])((?:\\.|[^\\d])*?)(\1)')
-	
-		for match in regex.finditer(data):
-			matchList.append(match.group(2))  # add all the required arguments to a list
-#		print(matchList)
-	
-		for param in range(len(matchList)):
-			requiredParameters[matchList[param]] = matchList[param]  # converts to required dictionary
-#		print(requiredParameters)
-#		print(myargs.items())
-
-		for key in requiredParameters.keys():
-			if not key in myargs:
-				missingArguments.append(key)
-		if len(missingArguments) > 0:	
-			print("missing arguments : ", missingArguments)
-			raise SystemExit
-			 
-		for k, v in requiredParameters.items():
-			if v in myargs.keys():
-	    			print(f"{k} : {myargs[v]}")  # prints only arguments which are mentioned in query file
-
-		for k, v in myargs.items():
-			data = data.replace(f'"{k}"', f'"{v}"')
-		return data	# returns replaced query
-		
-		
-	elif "query" in myargs.keys() and "help" in myargs.keys() and "h" not in myargs.keys():
-		with open(myargs['query'], 'r') as fp:
-			data = fp.read()
-		regex = re.compile(r'(["])((?:\\.|[^\\d])*?)(\1)')
-
-		for match in regex.finditer(data):
-			matchList.append(match.group(2))  # add all the required arguments to a list
-
-		for param in range(len(matchList)):
-			requiredParameters[matchList[param]] = matchList[param]  # converts to required dictionary
-		str = "tquery "
-		if 'help' in myargs:
-			for item in requiredParameters:
-				str += "--" + item + ' ' + '<' + requiredParameters[item] + '>' + ' '
-			print("#############################################################################################")		
-			print(f"{str}" + "--query" + ' ' + myargs['query'])
-			print("#############################################################################################")
-	
-	elif "query" in myargs.keys() and "h" not in myargs.keys():
-		with open(myargs['query'], 'r') as fp:
-			data = fp.read()
-		regex = re.compile(r'(["])((?:\\.|[^\\d])*?)(\1)')
-	
-		for match in regex.finditer(data):
-			matchList.append(match.group(2))  # add all the required arguments to a list
-#		print(matchList)
-	
-		for param in range(len(matchList)):
-			requiredParameters[matchList[param]] = matchList[param]  # converts to required dictionary
-#		print(requiredParameters)
-#		print(myargs.items())
-
-		for key in requiredParameters.keys():
-			if not key in myargs:
-				missingArguments.append(key)
-		if len(missingArguments) > 0:	
-			print("missing arguments : ", missingArguments)
-			raise SystemExit
-			 
-		for k, v in requiredParameters.items():
-			if v in myargs.keys():
-	    			print(f"{k} : {myargs[v]}")  # prints only arguments which are mentioned in query file
-
-		for k, v in myargs.items():
-			data = data.replace(f'"{k}"', f'"{v}"')
-		return data	# returns replaced query
-
-		
 
 if __name__ == '__main__':
 	queriesResult = []
 	finalSheetNames = []
-	myargs = getopts(argv)
+	#myargs = getopts(sys.argv)
 	block = ""
+	import sys
+
+	myargs = getopts(sys.argv[1:])
+	# print(myargs)
 	try:
 		block = myargs['block']
 	except KeyError:
@@ -357,18 +156,25 @@ if __name__ == '__main__':
 		splitString = replacedData.split(";")
 		try:
 			cursor = conn.cursor()
-			#filename = ''.join(random.choice(string.ascii_lowercase) for i in range(16)) 
+			success = True  # Flag for the success of all operations
+
 			for cmdoneonly in splitString:
 				cmdoneonly = cmdoneonly.replace('\n', ' ').replace('\n\n', '').lower().strip()
-				#print(cmdoneonly)
+
 				if cmdoneonly.strip():
-					if cmdoneonly.startswith(('update','delete')):
-						cursor.execute(cmdoneonly)
-						print("Operation completed successfully")
+					if cmdoneonly.startswith(('update', 'delete', 'insert')):
+						try:
+							cursor.execute(cmdoneonly)
+							conn.commit()  # Commit the transaction if the operation is successful
+							print("Operation completed successfully")
+						except Exception as e:
+							conn.rollback()  # Rollback the transaction if an error occurs
+							print(f"Operation failed: {str(e)}")
+							success = False  # Set the success flag to False
 					else:
 						cursor.execute(cmdoneonly)
 						results = cursor.fetchall()
-						if results :
+						if results:
 							df = pd.DataFrame(results, columns=[x[0] for x in cursor.description])
 							queriesResult.append(df)
 							sheetName = re.compile(r'^select\s+.+from\s+([a-z_]+)')
@@ -393,10 +199,13 @@ if __name__ == '__main__':
 							print("The query result doesn't have any data to showcase")	
 						
 			cursor.close()
-			print("scrip execution completed")
+
+			if success:
+				print("All operations completed successfully")
+			else:
+				print("Some operations failed, transaction rolled back")
+			#print("scrip execution completed")
 		except pymysql.err.ProgrammingError as except_detail:
 			print("pymysql.err.ProgrammingError: «{}»".format(except_detail))
 		finally:
 			conn.close()
-	
-

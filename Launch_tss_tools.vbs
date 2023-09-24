@@ -28,7 +28,8 @@ strWorkbookPath = "C:\SearchTool\SearchTool.xlsm"  ' Replace with the actual fil
 	
 	objWorkbook.Activate
 	
-	objWorkbook.Close
+	'objWorkbook.Saved = False
+	'objWorkbook.Close False
 	
     ' Clean up
     Set objWorkbook = Nothing

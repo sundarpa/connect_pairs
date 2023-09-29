@@ -13,20 +13,21 @@ import random
 import string
 from os.path import abspath, dirname
 
+#to make the current dir where the script resides
 current_wrk_dir = os.getcwd()
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
 
-
 def getopts(argv):
     opts = {}
 
-    # Check if the first argument is a file path starting with '/'
+    # Check if the first argument is a file path starting with '/', todo: find the reason why below code exists
     if argv and argv[0][0] == '/':
         opts[argv[0][2:]] = argv[1]
         argv = argv[1:]
 
+#creating key value pair from the arguments, removes -- todo: test possible switches such as -,--, empty keys etc
     while argv:
         if argv[0].startswith("--") or argv[0].startswith("-"):
             option = argv[0][2:]
@@ -42,13 +43,15 @@ def getopts(argv):
 
     return opts
 
-CONFIG_PATH = "./config.ini"
+CONFIG_PATH = "./config.ini" #Todo: create a local db, using say heidisql and store the sample credentials(optional) 
 
 config = configparser.ConfigParser()
 config.read(CONFIG_PATH)
 
+#Todo: Use this for default, and use encrypt
 conn = pymysql.connect(host="localhost", port=3306, user= "root", passwd="QWE#44#rtyuio", db="searchtool")
 
+#autocommit where there is a need to commit only once, say not in loop
 conn.autocommit(True)
 
 def openquery(myargs):
@@ -126,18 +129,18 @@ def openquery(myargs):
 			print("###########################################################################################")		
 			print(f"{str}" + "--query" + ' ' + myargs['query'])
 			print("###########################################################################################")
+#todo: import the arg parser related code from outside, to make it clean in main
 
 if __name__ == '__main__':
 	queriesResult = []
 	finalSheetNames = []
 	#myargs = getopts(sys.argv)
 	block = ""
-	import sys
 
 	myargs = getopts(sys.argv[1:])
 	# print(myargs)
 	try:
-		block = myargs['block']
+		block = myargs['block'] #Todo: low priority,  remove the block and apply this for other arguments
 	except KeyError:
 		block = None
 	if block is not None:
@@ -182,7 +185,7 @@ if __name__ == '__main__':
 								finalSheetNames.append(names.group(1))
 							folderName = myargs['query'][:-6]
 							path = myargs.get('out_path',current_wrk_dir)
-							if path == current_wrk_dir:
+							if path == current_wrk_dir: #todo: lower priority, remove the project, rev, block
 								project_folder = myargs['project']
 								project_folder_path = os.path.join(path,project_folder)
 								rev_folder = myargs['rev']

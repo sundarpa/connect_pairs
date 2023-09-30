@@ -35,18 +35,18 @@ CONFIG_PATH = "./config.ini"
 config = configparser.ConfigParser()
 config.read(CONFIG_PATH)
 
-# Get the database credentials from the config file
+# Get the remote database credentials from the config file
 db_host = config['SEARCHTOOL']['host']
 db_port = int(config['SEARCHTOOL']['port'])
 db_user = config['SEARCHTOOL']['user']
 db_db = config['SEARCHTOOL']['db']
 encrypted_db_password = config['SEARCHTOOL']['encrypted_password']
 
-# Decrypt the encrypted password
+# Decrypt the remote database password
 db_password = decrypt(encrypted_db_password)
 
 try:
-    # Attempt to connect to the remote database
+    # Connect to the remote database
     db_credentials = {
         'host': db_host,
         'port': db_port,
@@ -63,17 +63,30 @@ except pymysql.Error:
     print("Failed to connect to the remote database")
 
     # If the remote connection fails, connect to the local database
+    # Get the local database credentials from the config file
+    local_db_host = config['LOCALDB']['host']
+    local_db_port = int(config['LOCALDB']['port'])
+    local_db_user = config['LOCALDB']['user']
+    local_db_db = config['LOCALDB']['db']
+    encrypted_local_db_password = config['LOCALDB']['encrypted_password']
+
+    # Decrypt the local database password
+    local_db_password = decrypt(encrypted_local_db_password)
+
     local_db_credentials = {
-        'host': 'localhost',
-        'port': 3306,
-        'user': 'root',
-        'passwd': 'QWE#44#rtyuio',
-        'db': 'searchtool'
+        'host': local_db_host,
+        'port': local_db_port,
+        'user': local_db_user,
+        'passwd': local_db_password,
+        'db': local_db_db
     }
 
-    conn = pymysql.connect(**local_db_credentials)
-    conn.autocommit(True)
-    print("Connected to the local database.")
+    try:
+        conn = pymysql.connect(**local_db_credentials)
+        conn.autocommit(True)
+        print("Connected to the local database.")
+    except pymysql.Error:
+        print("Failed to connect to the local database.")
 
 #autocommit where there is a need to commit only once, say not in loop
 # conn.autocommit(True)

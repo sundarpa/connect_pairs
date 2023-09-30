@@ -20,16 +20,63 @@ abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
 
-CONFIG_PATH = "./config.ini" #Todo: create a local db, using say heidisql and store the sample credentials(optional) 
+# Function to decrypt an encrypted string
+def decrypt(encrypted_str):
+    try:
+        decrypted_bytes = base64.b64decode(encrypted_str)
+        decrypted_str = decrypted_bytes.decode('utf-8')
+        return decrypted_str
+    except Exception as e:
+        print("Error decrypting:", str(e))
+        return None
 
+# Path to the config file
+CONFIG_PATH = "./config.ini"
 config = configparser.ConfigParser()
 config.read(CONFIG_PATH)
 
-#Todo: Use this for default, and use encrypt
-conn = pymysql.connect(host="localhost", port=3306, user= "root", passwd="QWE#44#rtyuio", db="searchtool")
+# Get the database credentials from the config file
+db_host = config['SEARCHTOOL']['host']
+db_port = int(config['SEARCHTOOL']['port'])
+db_user = config['SEARCHTOOL']['user']
+db_db = config['SEARCHTOOL']['db']
+encrypted_db_password = config['SEARCHTOOL']['encrypted_password']
+
+# Decrypt the encrypted password
+db_password = decrypt(encrypted_db_password)
+
+try:
+    # Attempt to connect to the remote database
+    db_credentials = {
+        'host': db_host,
+        'port': db_port,
+        'user': db_user,
+        'passwd': db_password,
+        'db': db_db
+    }
+
+    conn = pymysql.connect(**db_credentials)
+    conn.autocommit(True)
+    print("Connected to the remote database.")
+
+except pymysql.Error:
+    print("Failed to connect to the remote database")
+
+    # If the remote connection fails, connect to the local database
+    local_db_credentials = {
+        'host': 'localhost',
+        'port': 3306,
+        'user': 'root',
+        'passwd': 'QWE#44#rtyuio',
+        'db': 'searchtool'
+    }
+
+    conn = pymysql.connect(**local_db_credentials)
+    conn.autocommit(True)
+    print("Connected to the local database.")
 
 #autocommit where there is a need to commit only once, say not in loop
-conn.autocommit(True)
+# conn.autocommit(True)
 def openquery(myargs):
 	matchList = []
 	missingArguments = []

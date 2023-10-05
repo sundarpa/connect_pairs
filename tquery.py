@@ -9,6 +9,8 @@ import pandas as pd
 from pandas import ExcelWriter
 import configparser
 import base64
+import glob
+import argparse
 import random
 import string
 from os.path import abspath, dirname
@@ -20,6 +22,8 @@ abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
 
+
+
 # Function to decrypt an encrypted string
 def decrypt(encrypted_str):
     try:
@@ -30,8 +34,16 @@ def decrypt(encrypted_str):
         print("Error decrypting:", str(e))
         return None
 
-# Path to the config file
-CONFIG_PATH = "./config.ini"
+# Parse command-line arguments using the imported function
+myargs, config_path = parse_argv(sys.argv[1:])
+
+# Determine the configuration file path based on the command-line argument or use the default
+if config_path:
+    CONFIG_PATH = config_path
+else:
+    CONFIG_PATH = "./config.ini"
+
+# Create a ConfigParser and read the configuration file
 config = configparser.ConfigParser()
 config.read(CONFIG_PATH)
 
@@ -88,8 +100,6 @@ except pymysql.Error:
     except pymysql.Error:
         print("Failed to connect to the local database.")
 
-#autocommit where there is a need to commit only once, say not in loop
-# conn.autocommit(True)
 def openquery(myargs):
 	matchList = []
 	missingArguments = []
@@ -169,12 +179,8 @@ def openquery(myargs):
 if __name__ == '__main__':
 	queriesResult = []
 	finalSheetNames = []
-	#myargs = getopts(sys.argv)
 	block = ""
 
-	# Parse command-line arguments using the imported function
-	myargs = parse_argv(sys.argv[1:])
-	# print(myargs)
 	try:
 		block = myargs['block'] #Todo: low priority,  remove the block and apply this for other arguments
 	except KeyError:

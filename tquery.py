@@ -1,4 +1,5 @@
 from sys import argv
+import importlib
 import pymysql
 import csv
 import sys
@@ -15,13 +16,17 @@ import random
 import string
 from os.path import abspath, dirname
 from arg_parser import parse_argv  # Import the parse_argv function from the external module
+import json
+import time
+import warnings
+
+warnings.filterwarnings("ignore")
 
 #to make the current dir where the script resides
 current_wrk_dir = os.getcwd()
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
-
 
 
 # Function to decrypt an encrypted string
@@ -180,6 +185,10 @@ if __name__ == '__main__':
 	queriesResult = []
 	finalSheetNames = []
 	block = ""
+	# json_data_dict = {}
+	start_time = time.time()
+	# Specify the module name (without the '.py' extension)
+	module_name = "reg"
 
 	try:
 		block = myargs['block'] #Todo: low priority,  remove the block and apply this for other arguments
@@ -222,23 +231,44 @@ if __name__ == '__main__':
 						if results:
 							df = pd.DataFrame(results, columns=[x[0] for x in cursor.description])
 							queriesResult.append(df)
-							sheetName = re.compile(r'^select\s+.+from\s+([a-z_]+)')
-							for names in sheetName.finditer(cmdoneonly):
-								finalSheetNames.append(names.group(1))
-							folderName = myargs['query'][:-6]
-							path = myargs.get('out_path',current_wrk_dir)
-							if path == current_wrk_dir: #todo: lower priority, remove the project, rev, block
-								project_folder = myargs['project']
-								project_folder_path = os.path.join(path,project_folder)
-								rev_folder = myargs['rev']
-								rev_folder_path = os.path.join(project_folder_path,rev_folder)
-								block_folder = myargs['block']
-								block_folder_path = os.path.join(rev_folder_path,block_folder)
-								path = os.path.join(block_folder_path, folderName)
-							os.makedirs(path, exist_ok=True)
-							for n,df in enumerate(queriesResult):
-									#df.to_csv(path + '_dir' + '/' + f'{finalSheetNames[n]}' + '_' + f'{filename[n]}' + '.csv', index=False)
-									df.to_csv(path + '/' + f'{finalSheetNames[n]}' + '.csv', index=False)
+							# print(queriesResult)
+							if 'json' in myargs:
+								for n, df in enumerate(queriesResult):
+									json_data = df.to_json(orient='records')
+									json_body = json.loads(json_data)
+									json_formatted_str = json.dumps(json_body, indent=4)
+
+								# Dynamically import the module
+								try:
+									imported_module = importlib.import_module(module_name)
+									print(f"Module '{module_name}' imported successfully.")
+								# Use a function from the imported module
+								except ImportError:
+									print(f"Failed to import module '{module_name}'.")
+
+								if hasattr(imported_module, "main") and callable(imported_module.main):
+									result = imported_module.main(myargs, json_formatted_str)
+								# print(result)
+								else:
+									print(f"Module '{module_name}' does not have a 'greet' function.")
+							else:
+								sheetName = re.compile(r'^select\s+.+from\s+([a-z_]+)')
+								for names in sheetName.finditer(cmdoneonly):
+									finalSheetNames.append(names.group(1))
+								folderName = myargs['query'][:-6]
+								path = myargs.get('out_path',current_wrk_dir)
+								if path == current_wrk_dir: #todo: lower priority, remove the project, rev, block
+									project_folder = myargs['project']
+									project_folder_path = os.path.join(path,project_folder)
+									rev_folder = myargs['rev']
+									rev_folder_path = os.path.join(project_folder_path,rev_folder)
+									block_folder = myargs['block']
+									block_folder_path = os.path.join(rev_folder_path,block_folder)
+									path = os.path.join(block_folder_path, folderName)
+								os.makedirs(path, exist_ok=True)
+								for n,df in enumerate(queriesResult):
+										#df.to_csv(path + '_dir' + '/' + f'{finalSheetNames[n]}' + '_' + f'{filename[n]}' + '.csv', index=False)
+										df.to_csv(path + '/' + f'{finalSheetNames[n]}' + '.csv', index=False)
 						else:
 							print("The query result doesn't have any data to showcase")
 			cursor.close()
@@ -252,3 +282,5 @@ if __name__ == '__main__':
 			print("pymysql.err.ProgrammingError: «{}»".format(except_detail))
 		finally:
 			conn.close()
+			end_time = time.time()
+			print("Script successfully completed in:", end_time - start_time, "seconds")

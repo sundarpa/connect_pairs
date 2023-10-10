@@ -28,6 +28,17 @@ abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
 
+def convert_dataframe_to_json(dataframe):
+    json_data = dataframe.to_json(orient='records')
+    json_body = json.loads(json_data)
+    json_formatted_str = json.dumps(json_body, indent=4)
+    return json_formatted_str
+
+def process_csv_file(csv_file):
+	with open(csv_file, 'r', newline='') as file:
+		reader = csv.DictReader(file)
+		for row in reader:
+			print(row)
 
 # Function to decrypt an encrypted string
 def decrypt(encrypted_str):
@@ -234,23 +245,40 @@ if __name__ == '__main__':
 							# print(queriesResult)
 							if 'json' in myargs:
 								for n, df in enumerate(queriesResult):
-									json_data = df.to_json(orient='records')
-									json_body = json.loads(json_data)
-									json_formatted_str = json.dumps(json_body, indent=4)
+									json_formatted_str = convert_dataframe_to_json(df)
 
-								# Dynamically import the module
+								# Dynamically import the module for JSON data
 								try:
-									imported_module = importlib.import_module(module_name)
-									print(f"Module '{module_name}' imported successfully.")
-								# Use a function from the imported module
+									imported_module_json = importlib.import_module(module_name)
+									print(f"Module '{module_name}' for JSON data imported successfully.")
 								except ImportError:
-									print(f"Failed to import module '{module_name}'.")
+									print(f"Failed to import module '{module_name}' for JSON data.")
 
-								if hasattr(imported_module, "main") and callable(imported_module.main):
-									result = imported_module.main(myargs, json_formatted_str)
-								# print(result)
+								if hasattr(imported_module_json, "main") and callable(imported_module_json.main):
+									result = imported_module_json.main(myargs, json_formatted_str)
 								else:
-									print(f"Module '{module_name}' does not have a 'greet' function.")
+									print(f"Module '{module_name}' for JSON data does not have a 'main' function.")
+
+							# Check if 'csv' key is in myargs
+							if 'csv' in myargs:
+								csv_file = myargs['csv']
+								process_csv_file(csv_file)
+
+								# Specify the module name for CSV handling
+								csv_module_name = "connect_pairs"
+
+								# Dynamically import the module for CSV data
+								try:
+									imported_module_csv = importlib.import_module(csv_module_name)
+									print(f"Module '{csv_module_name}' for CSV data imported successfully.")
+								except ImportError:
+									print(f"Failed to import module '{csv_module_name}' for CSV data.")
+
+								if hasattr(imported_module_csv, "process_csv_data") and callable(imported_module_csv.process_csv_data):
+									csv_result = imported_module_csv.process_csv_data(myargs, csv_file)
+								else:
+									print(
+										f"Module '{csv_module_name}' for CSV data does not have a 'csv_main' function.")
 							else:
 								sheetName = re.compile(r'^select\s+.+from\s+([a-z_]+)')
 								for names in sheetName.finditer(cmdoneonly):

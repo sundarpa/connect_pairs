@@ -23,7 +23,7 @@
             },
             "optional": {},
             "example": {
-                "qultivate_phasing -project testing_demo -rev r1_secn14lpp -block ATPG_FA -out_path /prj/vlsi/pete/ptetools/prod/tss/runcommands/supportFiles/<username>/qultivate_phasing.xlsx -pull": {}
+                "qultivate_phasing -project testing_demo -rev r1_secn14lpp -block ATPG_FA -out_path /prj/vlsi/pete/ptetools/prod/tss/runcommands/supportFiles/<username>/ -pull": {}
             },
             "Template": {
                 "qultivate_phasing -project <project> -rev <rev> -block <block> -out_path <out_path> -pull": {}
@@ -62,7 +62,7 @@
                 }
             },
             "example": [
-                "-pushfile /prj/vlsi/pete/ptetools/prod/tss/runcommands/supportFiles/<username>/ -push -project testing_demo -rev r1_secn14lpp -block ATPG_FA ",
+                "qultivate_phasing -pushfile /prj/vlsi/pete/ptetools/prod/tss/runcommands/supportFiles/<username>/ -project testing_demo -rev r1_secn14lpp -block ATPG_FA -push ",
                 ""
             ],
             "Template": {
@@ -87,7 +87,7 @@
             },
             "optional": {},
             "example": {
-                "qultivate_phasing -project testing_demo -rev r1_secn14lpp -block ATPG_FA -out_path /prj/vlsi/pete/ptetools/prod/tss/runcommands/supportFiles/<username>/sku_definition.xlsx -getsku": {}
+                "qultivate_phasing -project testing_demo -rev r1_secn14lpp -out_path /prj/vlsi/pete/ptetools/prod/tss/runcommands/supportFiles/<username>/ -getsku": {}
             },
             "Template": {
                 "qultivate_phasing -project <project> -rev <rev>  -out_path <out_path> -getsku": {}
@@ -122,7 +122,7 @@
                 }
             },
             "example": [
-                "-pushfile /prj/vlsi/pete/ptetools/prod/tss/runcommands/supportFiles/<username>/ - -project testing_demo -rev r1_secn14lpp  ",
+                "qultivate_phasing -pushfile /prj/vlsi/pete/ptetools/prod/tss/runcommands/supportFiles/<username>/ -project testing_demo -rev r1_secn14lpp -update_sku",
                 ""
             ],
             "Template": {
@@ -148,7 +148,7 @@
                 "": {}
             },
             "example": {
-                "qultivate_phasing --project testing_demo --rev r1_secn14lpp --featuring No_Modem --remove_sku": {}
+                "qultivate_phasing -project testing_demo -rev r1_secn14lpp -featuring No_Modem -remove_sku": {}
             },
             "Template": {
                 "qultivate_phasing -project <project> -rev <rev> -featuring <featuring> -remove_sku": {}

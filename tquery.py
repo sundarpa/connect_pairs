@@ -16,6 +16,7 @@ import random
 import string
 from os.path import abspath, dirname
 from arg_parser import parse_argv  # Import the parse_argv function from the external module
+from arg_parser import openquery
 import json
 import time
 import warnings
@@ -116,82 +117,6 @@ except pymysql.Error:
     except pymysql.Error:
         print("Failed to connect to the local database.")
 
-def openquery(myargs):
-	matchList = []
-	missingArguments = []
-	requiredParameters = {}
-	if len(myargs) == 1:
-		if 'h' in myargs.keys() or 'help' in myargs.keys():
-			print("provide --query <queryName.query> from below supported list")
-			dir_path = '/released_path/*.query'
-			for queries in glob.glob(dir_path, recursive=True):
-				print(queries)
-
-	elif "query" in myargs.keys() and "help" in myargs.keys() and "h" not in myargs.keys():
-		with open(myargs['query'], 'r') as fp:
-			data = fp.read()
-		regex = re.compile(r'(["])((?:\\.|[^\\d])*?)(\1)')
-
-		for match in regex.finditer(data):
-			matchList.append(match.group(2))  # add all the required arguments to a list
-
-		for param in range(len(matchList)):
-			requiredParameters[matchList[param]] = matchList[param]  # converts to required dictionary
-		str = "tquery "
-		if 'help' in myargs:
-			for item in requiredParameters:
-				str += "--" + item + ' ' + '<' + requiredParameters[item] + '>' + ' '
-			print("#############################################################################################")
-			print(f"{str}" + "--query" + ' ' + myargs['query'])
-			print("#############################################################################################")
-
-	elif "query" in myargs.keys() and "h" not in myargs.keys():
-		with open(myargs['query'], 'r') as fp:
-			data = fp.read()
-		regex = re.compile(r'(["])((?:\\.|[^\\d])*?)(\1)')
-
-		for match in regex.finditer(data):
-			matchList.append(match.group(2))  # add all the required arguments to a list
-		print(matchList)
-
-		for param in range(len(matchList)):
-			requiredParameters[matchList[param]] = matchList[param]  # converts to required dictionary
-		print(requiredParameters)
-		print(myargs.items())
-
-		for key in requiredParameters.keys():
-			if not key in myargs:
-				missingArguments.append(key)
-		if len(missingArguments) > 0:
-			print("missing arguments : ", missingArguments)
-			raise SystemExit
-
-		for k, v in requiredParameters.items():
-			if v in myargs.keys():
-				print(f"{k} : {myargs[v]}")  # prints only arguments which are mentioned in query file
-
-		for k, v in myargs.items():
-			data = data.replace(f'"{k}"', f'"{v}"')
-		return data  # returns replaced query
-
-	elif "query" in myargs.keys() and "h" in myargs.keys():
-		with open(myargs['query'], 'r') as fp:
-			data = fp.read()
-		regex = re.compile(r'(["])((?:\\.|[^\\d])*?)(\1)')
-
-		for match in regex.finditer(data):
-			matchList.append(match.group(2))  # add all the required arguments to a list
-
-		for param in range(len(matchList)):
-			requiredParameters[matchList[param]] = matchList[param]  # converts to required dictionary
-		str = "tquery "
-		if 'h' in myargs:
-			for item in requiredParameters:
-				str += "--" + item + ' ' + '<' + requiredParameters[item] + '>' + ' '
-			print("###########################################################################################")
-			print(f"{str}" + "--query" + ' ' + myargs['query'])
-			print("###########################################################################################")
-
 if __name__ == '__main__':
 	queriesResult = []
 	finalSheetNames = []
@@ -265,7 +190,7 @@ if __name__ == '__main__':
 								process_csv_file(csv_file)
 
 								# Specify the module name for CSV handling
-								csv_module_name = "connect_pairs"
+								csv_module_name = "connect_pairs"#Todo: Module name should come from switch.The value of switch should be module name.
 
 								# Dynamically import the module for CSV data
 								try:
@@ -275,7 +200,7 @@ if __name__ == '__main__':
 									print(f"Failed to import module '{csv_module_name}' for CSV data.")
 
 								if hasattr(imported_module_csv, "process_csv_data") and callable(imported_module_csv.process_csv_data):
-									csv_result = imported_module_csv.process_csv_data(myargs, csv_file)
+									csv_result = imported_module_csv.process_csv_data(myargs, csv_file)#Todo: Process CSV data function should be in main
 								else:
 									print(
 										f"Module '{csv_module_name}' for CSV data does not have a 'csv_main' function.")

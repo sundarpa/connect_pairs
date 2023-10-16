@@ -17,10 +17,11 @@ import string
 from os.path import abspath, dirname
 from arg_parser import parse_argv  # Import the parse_argv function from the external module
 from query import openquery
-from connect_pairs import process_csv_files
+from connect_pairs import main
 import json
 import time
 import warnings
+import subprocess
 
 warnings.filterwarnings("ignore")
 
@@ -46,15 +47,6 @@ def import_module(module_name):
         print(f"Failed to import module '{module_name}'.")
         return None
 
-def process_csv_file(csv_file):
-    try:
-        with open(csv_file, 'r', newline='') as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                print(row)
-    except Exception as e:
-        print(f"Error: {e}")
-
 # Function to decrypt an encrypted string
 def decrypt(encrypted_str):
     try:
@@ -66,7 +58,7 @@ def decrypt(encrypted_str):
         return None
 
 # Parse command-line arguments using the imported function
-myargs, config_path = parse_argv(sys.argv[1:])
+myargs, config_path, csv_module_name = parse_argv(sys.argv[1:])
 
 # Determine the configuration file path based on the command-line argument or use the default
 if config_path:
@@ -138,23 +130,21 @@ if __name__ == '__main__':
 	# json_data_dict = {}
 	start_time = time.time()
 
+	#check if csv is in myargs
 	if 'csv' in myargs:
-		# Extract CSV data from myargs (assuming it's a dictionary)
-		csv_data = myargs['csv']
-		process_csv_file(csv_data)
+		csv_module_name = myargs['csv']  # Get the provided CSV module name
+		if csv_module_name:
+			try:
+				imported_module_csv = importlib.import_module(csv_module_name)
+				print(f"Module '{csv_module_name}' imported successfully.")
 
-		# Specify the module name for CSV handling (passed as a command-line argument)
-		csv_module_name = myargs.get('csv_module', 'connect_pairs')  # Default to 'connect_pairs' if not specified
-
-		# Dynamically import the module for CSV data
-		imported_module_csv = import_module(csv_module_name)
-
-		if imported_module_csv:
-			if hasattr(imported_module_csv, "process_csv_files") and callable(imported_module_csv.process_csv_files):
-				# Call the process_csv_data function with the CSV data string
-				csv_result = imported_module_csv.process_csv_files(myargs, csv_data)
-			else:
-				print(f"Module '{csv_module_name}' for CSV data does not have a 'process_csv_data' function.")
+				# Check if the imported module has a 'main' function
+				if hasattr(imported_module_csv, "main") and callable(imported_module_csv.main):
+					imported_module_csv.main("input_vectors.csv", "mapping.csv")
+				else:
+					print(f"Module '{csv_module_name}' does not have a 'main' function.")
+			except ImportError:
+				print(f"Failed to import module '{csv_module_name}' for CSV data")
 
 	try:
 		block = myargs['block'] #Todo: low priority,  remove the block and apply this for other arguments
@@ -197,6 +187,7 @@ if __name__ == '__main__':
 						if results:
 							df = pd.DataFrame(results, columns=[x[0] for x in cursor.description])
 							queriesResult.append(df)
+							# check if json is in myargs
 							if 'json' in myargs:
 								json_formatted_str = convert_dataframe_to_json(df)
 								json_module_name = myargs.get('json_module', 'reg')  # Default to 'reg' if not specified

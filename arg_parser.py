@@ -2,7 +2,8 @@ import sys
 
 def parse_argv(argv):
     opts = {}
-    config_path = None  # Initialize the config_path variable
+    config_path = None
+    csv_module_name = None  # Initialize the csv_module_name variable
 
     while argv:
         if argv[0].startswith("--") or argv[0].startswith("-"):
@@ -19,4 +20,5 @@ def parse_argv(argv):
         else:
             print("Error: Invalid argument", argv[0])
             return opts, config_path
-    return opts, config_path
+
+    return opts, config_path, csv_module_name

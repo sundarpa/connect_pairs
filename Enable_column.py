@@ -12,15 +12,11 @@ input_df = pd.read_csv(input_csv_file, delimiter=',')
 def update_enable_column(row):
     enable_value = ''
 
-    for index, condition in conditions_df.iterrows():
-        condition_columns = condition['condition'].split(':')
-
-        # Check if any column in the condition is 'Y'
-        if any(row[column] == 'Y' for column in condition_columns):
+    for column in row.index[1:]:  # Exclude the 'Enable' column
+        if row[column] == 'Y':
             enable_value = 'Y'
             break
-
-        if any(row[column] == 'N' for column in condition_columns):
+        elif row[column] == 'N':
             enable_value = 'N'
         else:
             enable_value = 'NIL'

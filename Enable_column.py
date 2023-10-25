@@ -32,7 +32,7 @@ input_df = input_df.apply(update_enable_column, axis=1)
 
 # Define a function to update S columns based on the conditions
 def update_s_columns(row):
-    for column in input_df.columns[1:]:  # Exclude the 'Enable' column
+    for column in input_df.columns[1:]:
         if column.startswith('S'):
             condition = conditions_df[conditions_df['column'] == column]['condition'].values[0]
             condition_columns = condition.split(':')

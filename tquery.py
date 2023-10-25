@@ -1,5 +1,6 @@
 #! /pkg/qct/software/python/sles12/3.9.4/bin/python3
 from sys import argv
+import importlib
 import pymysql
 import csv
 import sys
@@ -10,16 +11,31 @@ import pandas as pd
 from pandas import ExcelWriter
 import configparser
 import base64
+import glob
+import argparse
 import random
 import string
 import argparse
 from os.path import abspath, dirname
+<<<<<<< HEAD
+=======
+from arg_parser import parse_argv  # Import the parse_argv function from the external module
+from query import openquery
+from connect_pairs import main
+import json
+import time
+import warnings
+import subprocess
+
+warnings.filterwarnings("ignore")
+>>>>>>> remotes/origin/vidya
 
 current_wrk_dir = os.getcwd()
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
 
+<<<<<<< HEAD
 def getopts(argv):
 	
 	opts = {}
@@ -61,10 +77,58 @@ def getopts(argv):
 		return opts
 
 CONFIG_PATH = "/prj/vlsi/pete/ptetools/prod/tss/TSS_DB_CONFIG/config.ini"
+=======
+def convert_dataframe_to_json(dataframe):
+    json_data = dataframe.to_json(orient='records')
+    json_body = json.loads(json_data)
+    json_formatted_str = json.dumps(json_body, indent=4)
+    return json_formatted_str
+>>>>>>> remotes/origin/vidya
 
+# Define a function to dynamically import a module by name
+def import_module(module_name):
+    try:
+        imported_module = importlib.import_module(module_name)
+        print(f"Module '{module_name}' imported successfully.")
+        return imported_module
+    except ImportError:
+        print(f"Failed to import module '{module_name}'.")
+        return None
+
+# Function to decrypt an encrypted string
+def decrypt(encrypted_str):
+    try:
+        decrypted_bytes = base64.b64decode(encrypted_str)
+        decrypted_str = decrypted_bytes.decode('utf-8')
+        return decrypted_str
+    except Exception as e:
+        print("Error decrypting:", str(e))
+        return None
+
+# Function to fetch data from a CSV file
+def fetch_data_from_csv(csv_filename):
+    try:
+        # Read the CSV file using pandas
+        df = pd.read_csv(csv_filename)
+        return df
+    except Exception as e:
+        print(f"Error reading CSV file: {str(e)}")
+        return None
+
+# Parse command-line arguments using the imported function
+myargs, config_path, csv_module_name = parse_argv(sys.argv[1:])
+
+# Determine the configuration file path based on the command-line argument or use the default
+if config_path:
+    CONFIG_PATH = config_path
+else:
+    CONFIG_PATH = "./config.ini"
+
+# Create a ConfigParser and read the configuration file
 config = configparser.ConfigParser()
 config.read(CONFIG_PATH)
 
+<<<<<<< HEAD
 def decrypt(config_db):
     dec = []
     for j in config.sections():
@@ -289,10 +353,33 @@ def openquery(myargs):
 		with open(myargs['query'], 'r') as fp:
 			data = fp.read()
 		regex = re.compile(r'(["])((?:\\.|[^\\d])*?)(\1)')
+=======
+# Get the remote database credentials from the config file
+db_host = config['SEARCHTOOL']['host']
+db_port = int(config['SEARCHTOOL']['port'])
+db_user = config['SEARCHTOOL']['user']
+db_db = config['SEARCHTOOL']['db']
+encrypted_db_password = config['SEARCHTOOL']['encrypted_password']
 
-		for match in regex.finditer(data):
-			matchList.append(match.group(2))  # add all the required arguments to a list
+# Decrypt the remote database password
+db_password = decrypt(encrypted_db_password)
 
+try:
+    # Connect to the remote database
+    db_credentials = {
+        'host': db_host,
+        'port': db_port,
+        'user': db_user,
+        'passwd': db_password,
+        'db': db_db
+    }
+>>>>>>> remotes/origin/vidya
+
+    conn = pymysql.connect(**db_credentials)
+    conn.autocommit(True)
+    print("Connected to the remote database.")
+
+<<<<<<< HEAD
 		for param in range(len(matchList)):
 			requiredParameters[matchList[param]] = matchList[param]  # converts to required dictionary
 		str = "tquery "
@@ -333,12 +420,80 @@ def openquery(myargs):
 		return data	# returns replaced query
 
 		
+=======
+except pymysql.Error:
+    print("Failed to connect to the remote database")
+
+    # If the remote connection fails, connect to the local database
+    # Get the local database credentials from the config file
+    local_db_host = config['LOCALDB']['host']
+    local_db_port = int(config['LOCALDB']['port'])
+    local_db_user = config['LOCALDB']['user']
+    local_db_db = config['LOCALDB']['db']
+    encrypted_local_db_password = config['LOCALDB']['encrypted_password']
+
+    # Decrypt the local database password
+    local_db_password = decrypt(encrypted_local_db_password)
+
+    local_db_credentials = {
+        'host': local_db_host,
+        'port': local_db_port,
+        'user': local_db_user,
+        'passwd': local_db_password,
+        'db': local_db_db
+    }
+
+    try:
+        conn = pymysql.connect(**local_db_credentials)
+        conn.autocommit(True)
+        print("Connected to the local database.")
+    except pymysql.Error:
+        print("Failed to connect to the local database.")
+>>>>>>> remotes/origin/vidya
 
 if __name__ == '__main__':
 	queriesResult = []
 	finalSheetNames = []
+<<<<<<< HEAD
 	myargs = getopts(argv)
 	block = ""
+=======
+	block = ""
+	# json_data_dict = {}
+	start_time = time.time()
+
+	# Check for the 'csvfile' argument
+	if 'csvfile' in myargs:
+		csv_filename = myargs['csvfile']  # Get the provided CSV filename
+		if csv_filename:
+			try:
+				# Fetch data from the specified CSV file
+				data_from_csv = fetch_data_from_csv(csv_filename)
+				if data_from_csv is not None:
+					print("Data from CSV file:")
+					print(data_from_csv)
+			except Exception as e:
+				print(f"Error fetching data from CSV: {str(e)}")
+	else:
+		print("No 'csvfile' argument provided")
+
+	#check if csv is in myargs
+	if 'csv' in myargs:
+		csv_module_name = myargs['csv']  # Get the provided CSV module name
+		if csv_module_name:
+			try:
+				imported_module_csv = importlib.import_module(csv_module_name)
+				print(f"Module '{csv_module_name}' imported successfully.")
+
+				# Check if the imported module has a 'main' function
+				if hasattr(imported_module_csv, "main") and callable(imported_module_csv.main):
+					imported_module_csv.main("input_vectors.csv", "mapping.csv")
+				else:
+					print(f"Module '{csv_module_name}' does not have a 'main' function.")
+			except ImportError:
+				print(f"Failed to import module '{csv_module_name}' for CSV data")
+
+>>>>>>> remotes/origin/vidya
 	try:
 		block = myargs['block']
 	except KeyError:
@@ -377,6 +532,7 @@ if __name__ == '__main__':
 						if results :
 							df = pd.DataFrame(results, columns=[x[0] for x in cursor.description])
 							queriesResult.append(df)
+<<<<<<< HEAD
 							#print(queriesResult)
 							
 							sheetName = re.compile(r'^SELECT\s+.+FROM\s+([a-z_]+)')
@@ -397,6 +553,43 @@ if __name__ == '__main__':
 							os.makedirs(path, exist_ok=True)
 							for n,df in enumerate(queriesResult):
 									#print(path)
+=======
+							# check if json is in myargs
+							if 'json' in myargs:
+								json_formatted_str = convert_dataframe_to_json(df)
+								json_module_name = myargs.get('json_module', 'reg')  # Default to 'reg' if not specified
+
+								# Dynamically import the module for JSON data
+								imported_module_json = import_module(json_module_name)
+
+								if imported_module_json:
+									if hasattr(imported_module_json, "main") and callable(imported_module_json.main):
+										result = imported_module_json.main(myargs, json_formatted_str)
+									else:
+										print(
+											f"Module '{json_module_name}' for JSON data does not have a 'main' function.")
+							else:
+								sheetName = re.compile(r'^select\s+.+from\s+([a-z_]+)')
+								for names in sheetName.finditer(cmdoneonly):
+									finalSheetNames.append(names.group(1))
+								folderName = myargs['query'][:-6]
+								path = myargs.get('out_path',current_wrk_dir)
+								if path == current_wrk_dir: #todo: lower priority, remove the project, rev, block
+									project_folder = myargs['project']
+									project_folder_path = os.path.join(path,project_folder)
+									rev_folder = myargs['rev']
+									rev_folder_path = os.path.join(project_folder_path,rev_folder)
+									block_folder = myargs['block']
+									block_folder_path = os.path.join(rev_folder_path,block_folder)
+									path = os.path.join(block_folder_path, folderName)
+								os.makedirs(path, exist_ok=True)
+								for n,df in enumerate(queriesResult):
+										#df.to_csv(path + '_dir' + '/' + f'{finalSheetNames[n]}' + '_' + f'{filename[n]}' + '.csv', index=False)
+										df.to_csv(path + '/' + f'{finalSheetNames[n]}' + '.csv', index=False)
+						else:
+							print("The query result doesn't have any data to showcase")
+			cursor.close()
+>>>>>>> remotes/origin/vidya
 
 									#print(df.to_json(orient='records'))
 									#df.to_csv(path + '_dir' + '/' + f'{finalSheetNames[n]}' + '_' + f'{filename[n]}' + '.csv', index=False)
@@ -413,5 +606,10 @@ if __name__ == '__main__':
 			print("pymysql.err.ProgrammingError: «{}»".format(except_detail))
 		finally:
 			conn.close()
+<<<<<<< HEAD
 	
 
+=======
+			end_time = time.time()
+			print("Script successfully completed in:", end_time - start_time, "seconds")
+>>>>>>> remotes/origin/vidya

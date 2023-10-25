@@ -13,7 +13,7 @@ input_df = pd.read_csv(input_csv_file, delimiter=',')
 def update_enable_column(row):
     enable_value = None  # Initialize with None
 
-    for column in row.index[1:]:  # Exclude the 'Enable' column
+    for column in row.index[1:]:
         if row[column] == 'Y':
             enable_value = 'Y'
             break
@@ -32,7 +32,7 @@ input_df = input_df.apply(update_enable_column, axis=1)
 
 # Define a function to update S columns based on the conditions
 def update_s_columns(row):
-    for column in input_df.columns[1:]:
+    for column in input_df.columns[1:]: # Exclude the 'Enable' column
         if column.startswith('S'):
             condition = conditions_df[conditions_df['column'] == column]['condition'].values[0]
             condition_columns = condition.split(':')

@@ -57,6 +57,16 @@ def decrypt(encrypted_str):
         print("Error decrypting:", str(e))
         return None
 
+# Function to fetch data from a CSV file
+def fetch_data_from_csv(csv_filename):
+    try:
+        # Read the CSV file using pandas
+        df = pd.read_csv(csv_filename)
+        return df
+    except Exception as e:
+        print(f"Error reading CSV file: {str(e)}")
+        return None
+
 # Parse command-line arguments using the imported function
 myargs, config_path, csv_module_name = parse_argv(sys.argv[1:])
 
@@ -129,6 +139,21 @@ if __name__ == '__main__':
 	block = ""
 	# json_data_dict = {}
 	start_time = time.time()
+
+	# Check for the 'csvfile' argument
+	if 'csvfile' in myargs:
+		csv_filename = myargs['csvfile']  # Get the provided CSV filename
+		if csv_filename:
+			try:
+				# Fetch data from the specified CSV file
+				data_from_csv = fetch_data_from_csv(csv_filename)
+				if data_from_csv is not None:
+					print("Data from CSV file:")
+					print(data_from_csv)
+			except Exception as e:
+				print(f"Error fetching data from CSV: {str(e)}")
+	else:
+		print("No 'csvfile' argument provided")
 
 	#check if csv is in myargs
 	if 'csv' in myargs:

@@ -141,17 +141,21 @@ if __name__ == '__main__':
 	start_time = time.time()
 
 	# Check for the 'csvfile' argument
+	# Check for the 'csvfile' argument
 	if 'csvfile' in myargs:
-		csv_filename = myargs['csvfile']  # Get the provided CSV filename
-		if csv_filename:
-			try:
-				# Fetch data from the specified CSV file
+		csv_filenames = myargs['csvfile']  # Get the provided CSV filenames as a list
+		if csv_filenames:
+			data_dict = {}  # Create a dictionary to store DataFrames
+
+			# Fetch data from the specified CSV files
+			for csv_filename in csv_filenames:
 				data_from_csv = fetch_data_from_csv(csv_filename)
 				if data_from_csv is not None:
-					print("Data from CSV file:")
+					key = csv_filename.split('.')[0]  # Extract the base name from the file
+					data_dict[key] = data_from_csv # Store the DataFrame with the base name as the key
+					print(f"Data from CSV file {csv_filename}:")
 					print(data_from_csv)
-			except Exception as e:
-				print(f"Error fetching data from CSV: {str(e)}")
+
 	else:
 		print("No 'csvfile' argument provided")
 
@@ -165,7 +169,7 @@ if __name__ == '__main__':
 
 				# Check if the imported module has a 'main' function
 				if hasattr(imported_module_csv, "main") and callable(imported_module_csv.main):
-					imported_module_csv.main("input_vectors.csv", "mapping.csv")
+					imported_module_csv.main("Input_vectors.csv", "mapping.csv")
 				else:
 					print(f"Module '{csv_module_name}' does not have a 'main' function.")
 			except ImportError:

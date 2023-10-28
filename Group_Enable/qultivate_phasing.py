@@ -309,7 +309,7 @@ def populate_skn_data():
 
 def load_data_from_csv(csv_filename):
     # Calling fetch_data_from_csv function from tquery.py
-    data_from_csv = fetch_data_from_csv(csv_filename)
+    data_from_csv = fetch_data_from_csv(csv_file)
     if data_from_csv is not None:
         print("Data from CSV file:")
         print(data_from_csv)

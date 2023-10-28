@@ -57,15 +57,15 @@ def decrypt(encrypted_str):
         print("Error decrypting:", str(e))
         return None
 
-# Function to fetch data from a CSV file
+# Function to fetch data from a CSV file and return both the DataFrame and the CSV filename
 def fetch_data_from_csv(csv_filename):
     try:
         # Read the CSV file using pandas
         df = pd.read_csv(csv_filename)
-        return df
+        return df, csv_filename
     except Exception as e:
         print(f"Error reading CSV file: {str(e)}")
-        return None
+        return None, None
 
 # Parse command-line arguments using the imported function
 myargs, config_path, csv_module_name = parse_argv(sys.argv[1:])
@@ -141,23 +141,18 @@ if __name__ == '__main__':
 	start_time = time.time()
 
 	# Check for the 'csvfile' argument
-	# Check for the 'csvfile' argument
 	if 'csvfile' in myargs:
 		csv_filenames = myargs['csvfile']  # Get the provided CSV filenames as a list
-		if csv_filenames:
-			data_dict = {}  # Create a dictionary to store DataFrames
+		csv_files = csv_filenames.split(':')  # Split the filenames by ':' into a list
+		# Created a dictionary to store DataFrames with CSV filenames as keys
+		data_dict = {}
 
-			# Fetch data from the specified CSV files
-			for csv_filename in csv_filenames:
-				data_from_csv = fetch_data_from_csv(csv_filename)
-				if data_from_csv is not None:
-					key = csv_filename.split('.')[0]  # Extract the base name from the file
-					data_dict[key] = data_from_csv # Store the DataFrame with the base name as the key
-					print(f"Data from CSV file {csv_filename}:")
-					print(data_from_csv)
-
-	else:
-		print("No 'csvfile' argument provided")
+		for csv_file in csv_files:
+			data_from_csv, csv_name = fetch_data_from_csv(csv_file)
+			if data_from_csv is not None:
+				data_dict[csv_name] = data_from_csv  # Store the DataFrame with the CSV filename as the key
+				print(f"Data from CSV file {csv_name}:")
+				print(data_from_csv)
 
 	#check if csv is in myargs
 	if 'csv' in myargs:

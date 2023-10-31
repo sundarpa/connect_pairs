@@ -122,7 +122,6 @@ def load_data_from_csv(csv_file):
     else:
         print("Failed to load data from the CSV file.")
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="load data from csv to excel and compare two dataframes.")
     parser.add_argument("-pull", action="store_true", help="load csv data to excel")

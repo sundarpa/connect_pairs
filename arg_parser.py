@@ -25,6 +25,6 @@ def parse_argv(argv):
             argv = argv[1:]
         else:
             print("Error: Invalid argument", argv[0])
-            return opts, config_path
+            return opts, config_path, csv_module_name
 
     return opts, config_path, csv_module_name

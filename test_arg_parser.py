@@ -1,5 +1,6 @@
 import unittest
 from arg_parser import parse_argv
+from tquery import fetch_data_from_csv
 
 class TestParseArgv(unittest.TestCase):
 
@@ -32,6 +33,7 @@ class TestParseArgv(unittest.TestCase):
         argv = []
         opts = parse_argv(argv)
         self.assertEqual(opts, {})
+
 
 if __name__ == "__main__":
     unittest.main()

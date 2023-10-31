@@ -1,9 +1,2 @@
-ini_core1,ini_core2,body_core1,body_core2
-corei1,coreia1,coreb1,coreba1
-corei1,coreia1,corebw1,corebaq1
-corei1,coreia1,corebr1,corebat1
-corei2,coreia2,corebx2,corebay2
-corei3,coreia3,coreb3,coreba3
-corei4,coreia4,coreb4,coreba4
-corei5,coreia5,coreb5,coreba5
-corei5,coreia5,coreby,corebay
+column1,column2
+value1,value2

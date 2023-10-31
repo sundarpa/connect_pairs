@@ -307,7 +307,7 @@ def populate_skn_data():
 	column_headings = df_sheet2.iloc[1:, 2].tolist()
 	return column_headings
 
-def load_data_from_csv(csv_filename):
+def load_data_from_csv(csv_file):
     # Calling fetch_data_from_csv function from tquery.py
     data_from_csv = fetch_data_from_csv(csv_file)
     if data_from_csv is not None:

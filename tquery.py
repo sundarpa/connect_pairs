@@ -17,7 +17,6 @@ import string
 from os.path import abspath, dirname
 from arg_parser import parse_argv  # Import the parse_argv function from the external module
 from query import openquery
-from connect_pairs import main
 import json
 import time
 import warnings
@@ -153,6 +152,7 @@ if __name__ == '__main__':
 				data_dict[csv_name] = data_from_csv  # Store the DataFrame with the CSV filename as the key
 				print(f"Data from CSV file {csv_name}:")
 				print(data_from_csv)
+				# print(data_dict)
 
 	#check if csv is in myargs
 	if 'csv' in myargs:

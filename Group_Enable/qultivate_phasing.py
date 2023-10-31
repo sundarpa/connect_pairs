@@ -10,6 +10,7 @@ import re
 import time
 import subprocess
 from os.path import abspath, dirname
+from tquery import fetch_data_from_csv
 
 current_wrk_dir = os.getcwd()
 abspath = os.path.abspath(__file__)
@@ -104,7 +105,6 @@ def populate_skn_data():
 	column_headings = df_sheet2.iloc[1:, 2].tolist()
 	return column_headings
 
-<<<<<<< HEAD
 def load_data_from_csv(csv_file):
     # Calling fetch_data_from_csv function from tquery.py
     data_from_csv = fetch_data_from_csv(csv_file)
@@ -114,8 +114,6 @@ def load_data_from_csv(csv_file):
     else:
         print("Failed to load data from the CSV file.")
 
-=======
->>>>>>> bf7a8dca7997689228721b1436c643c44aa22ccd
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description="load data from csv to excel and compare two dataframes.")
 	parser.add_argument("-pull", action="store_true", help="load csv data to excel")

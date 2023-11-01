@@ -20,6 +20,8 @@ import time
 import warnings
 import subprocess
 from Database import get_database_connection, decrypt
+import openpyxl
+from openpyxl import load_workbook
 
 warnings.filterwarnings("ignore")
 
@@ -55,9 +57,23 @@ def fetch_data_from_csv(csv_filename):
         print(f"Error reading CSV file: {str(e)}")
         return None, None
 
-# Parse command-line arguments using the imported function
-myargs, config_path, csv_module_name = parse_argv(sys.argv[1:])
+# Function to fetch data from an Excel file and return a dictionary of DataFrames
+def fetch_data_from_excel(excel_filename):
+    try:
+        data_dict = {}  # Initialize data_dict as an empty dictionary
+        # Load the Excel file using openpyxl
+        wb = load_workbook(excel_filename, data_only=True)
+        for sheet_name in wb.sheetnames:
+            df = pd.read_excel(excel_filename, sheet_name=sheet_name)
+            data_dict[sheet_name] = df
+        return data_dict
+    except Exception as e:
+        print(f"Error reading Excel file: {str(e)}")
+        return None
 
+# Parse command-line arguments using the imported function
+myargs, config_path, csv_module_name, excel_filename  = parse_argv(sys.argv[1:])
+print(myargs)
 if __name__ == '__main__':
 	queriesResult = []
 	finalSheetNames = []
@@ -65,6 +81,24 @@ if __name__ == '__main__':
 	# json_data_dict = {}
 	start_time = time.time()
 	conn = get_database_connection(config_path)
+
+	# Check for the 'excelfile' argument
+	if 'excelfile' in myargs:
+		excel_filenames = myargs['excelfile']  # Get the provided Excel filenames as a list
+		excel_files = excel_filenames.split(':')
+		excel_data_dict = {}
+
+
+		for excel_file in excel_files:
+			data_from_excel = fetch_data_from_excel(excel_file)
+			if data_from_excel is not None:
+				excel_data_dict[excel_file] = data_from_excel
+				print(f"Data from Excel file {excel_file}:")
+				for sheet_name, df in data_from_excel.items():
+					print(f"Sheet: {sheet_name}")
+					print(df)
+	else:
+		print("Please provide the --excelfile argument with a path to the Excel file.")
 
 	# Check for the 'csvfile' argument
 	if 'csvfile' in myargs:

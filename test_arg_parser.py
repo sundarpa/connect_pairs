@@ -1,6 +1,7 @@
 import unittest
 from arg_parser import parse_argv
-from tquery import fetch_data_from_csv, import_module
+from tquery import *
+from openpyxl import Workbook
 
 class TestParseArgv(unittest.TestCase):
 
@@ -69,6 +70,22 @@ class TestParseArgv(unittest.TestCase):
         module_name = "nonexistent_module"
         imported_module = import_module(module_name)
         self.assertIsNone(imported_module)
+
+    def test_valid_excel_file(self):
+        excel_filename = "Data.xlsx"
+        data_dict = fetch_data_from_excel(excel_filename)
+        # Verify that data_dict contains two DataFrames for each sheet
+        self.assertIn("Things", data_dict)
+        self.assertIn("Data", data_dict)
+        self.assertIsInstance(data_dict["Things"], pd.DataFrame)
+        self.assertIsInstance(data_dict["Data"], pd.DataFrame)
+
+    def test_nonexistent_excel_file(self):
+        excel_filename = "nonexistent_data.xlsx"
+
+        # Try to fetch data from the non-existent file
+        data_dict = fetch_data_from_excel(excel_filename)
+        self.assertIsNone(data_dict)
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,6 +1,6 @@
 import unittest
 from arg_parser import parse_argv
-from tquery import fetch_data_from_csv
+from tquery import fetch_data_from_csv, import_module
 
 class TestParseArgv(unittest.TestCase):
 
@@ -34,6 +34,41 @@ class TestParseArgv(unittest.TestCase):
         opts = parse_argv(argv)
         self.assertEqual(opts, {})
 
+    def test_valid_csv(self):
+        csv_filename = "INPUT.csv"
+        df, filename = fetch_data_from_csv(csv_filename)
+        self.assertIsNotNone(df)
+        self.assertEqual(filename, csv_filename)
+
+    def test_nonexistent_csv(self):
+        csv_filename = "nonexistent_data.csv"
+        df, filename = fetch_data_from_csv(csv_filename)
+        self.assertIsNone(df)
+        self.assertIsNone(filename)
+
+    def test_empty_csv(self):
+        csv_filename = "empty_data.csv"
+        df, filename = fetch_data_from_csv(csv_filename)
+        self.assertIsNotNone(df)
+        self.assertEqual(len(df), 0)
+        self.assertEqual(filename, csv_filename)
+
+    def test_invalid_csv(self):
+        csv_filename = "invalid_data.csv"
+        df, filename = fetch_data_from_csv(csv_filename)
+        self.assertIsNone(df)
+        self.assertIsNone(filename)
+
+    def test_valid_module(self):
+        module_name = "connect_pairs"
+        imported_module = import_module(module_name)
+        self.assertIsNotNone(imported_module)
+        self.assertTrue(hasattr(imported_module, 'main'))  # Check if the module has a specific function
+
+    def test_invalid_module(self):
+        module_name = "nonexistent_module"
+        imported_module = import_module(module_name)
+        self.assertIsNone(imported_module)
 
 if __name__ == "__main__":
     unittest.main()

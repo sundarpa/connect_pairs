@@ -1,6 +1,6 @@
 from sys import argv
-import importlib
 import pymysql
+import importlib
 import csv
 import sys
 import re
@@ -8,8 +8,6 @@ import glob
 import os
 import pandas as pd
 from pandas import ExcelWriter
-import configparser
-import base64
 import glob
 import argparse
 import random
@@ -21,6 +19,7 @@ import json
 import time
 import warnings
 import subprocess
+from Database import get_database_connection, decrypt
 
 warnings.filterwarnings("ignore")
 
@@ -46,16 +45,6 @@ def import_module(module_name):
         print(f"Failed to import module '{module_name}'.")
         return None
 
-# Function to decrypt an encrypted string
-def decrypt(encrypted_str):
-    try:
-        decrypted_bytes = base64.b64decode(encrypted_str)
-        decrypted_str = decrypted_bytes.decode('utf-8')
-        return decrypted_str
-    except Exception as e:
-        print("Error decrypting:", str(e))
-        return None
-
 # Function to fetch data from a CSV file and return both the DataFrame and the CSV filename
 def fetch_data_from_csv(csv_filename):
     try:
@@ -69,75 +58,13 @@ def fetch_data_from_csv(csv_filename):
 # Parse command-line arguments using the imported function
 myargs, config_path, csv_module_name = parse_argv(sys.argv[1:])
 
-# Determine the configuration file path based on the command-line argument or use the default
-if config_path:
-    CONFIG_PATH = config_path
-else:
-    CONFIG_PATH = "./config.ini"
-
-# Create a ConfigParser and read the configuration file
-config = configparser.ConfigParser()
-config.read(CONFIG_PATH)
-
-# Get the remote database credentials from the config file
-db_host = config['SEARCHTOOL']['host']
-db_port = int(config['SEARCHTOOL']['port'])
-db_user = config['SEARCHTOOL']['user']
-db_db = config['SEARCHTOOL']['db']
-encrypted_db_password = config['SEARCHTOOL']['encrypted_password']
-
-# Decrypt the remote database password
-db_password = decrypt(encrypted_db_password)
-
-try:
-    # Connect to the remote database
-    db_credentials = {
-        'host': db_host,
-        'port': db_port,
-        'user': db_user,
-        'passwd': db_password,
-        'db': db_db
-    }
-
-    conn = pymysql.connect(**db_credentials)
-    conn.autocommit(True)
-    print("Connected to the remote database.")
-
-except pymysql.Error:
-    print("Failed to connect to the remote database")
-
-    # If the remote connection fails, connect to the local database
-    # Get the local database credentials from the config file
-    local_db_host = config['LOCALDB']['host']
-    local_db_port = int(config['LOCALDB']['port'])
-    local_db_user = config['LOCALDB']['user']
-    local_db_db = config['LOCALDB']['db']
-    encrypted_local_db_password = config['LOCALDB']['encrypted_password']
-
-    # Decrypt the local database password
-    local_db_password = decrypt(encrypted_local_db_password)
-
-    local_db_credentials = {
-        'host': local_db_host,
-        'port': local_db_port,
-        'user': local_db_user,
-        'passwd': local_db_password,
-        'db': local_db_db
-    }
-
-    try:
-        conn = pymysql.connect(**local_db_credentials)
-        conn.autocommit(True)
-        print("Connected to the local database.")
-    except pymysql.Error:
-        print("Failed to connect to the local database.")
-
 if __name__ == '__main__':
 	queriesResult = []
 	finalSheetNames = []
 	block = ""
 	# json_data_dict = {}
 	start_time = time.time()
+	conn = get_database_connection(config_path)
 
 	# Check for the 'csvfile' argument
 	if 'csvfile' in myargs:

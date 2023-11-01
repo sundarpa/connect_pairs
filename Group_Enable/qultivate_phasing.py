@@ -10,7 +10,7 @@ import re
 import time
 import subprocess
 from os.path import abspath, dirname
-from tquery import fetch_data_from_csv
+from tquery import fetch_data_from_csv, fetch_data_from_excel
 
 current_wrk_dir = os.getcwd()
 abspath = os.path.abspath(__file__)
@@ -121,6 +121,15 @@ def load_data_from_csv(csv_file):
         print(data_from_csv)
     else:
         print("Failed to load data from the CSV file.")
+
+def load_data_from_excel(excel_file):
+    # Calling fetch_data_from_excel function from tquery.py
+    data_from_excel = fetch_data_from_excel(csv_file)
+    if data_from_excel is not None:
+        print("Data from CSV file:")
+        print(data_from_excel)
+    else:
+        print("Failed to load data from the Excel file.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="load data from csv to excel and compare two dataframes.")

@@ -117,19 +117,21 @@ def load_data_from_csv(csv_file):
     # Calling fetch_data_from_csv function from tquery.py
     data_from_csv = fetch_data_from_csv(csv_file)
     if data_from_csv is not None:
-        print("Data from CSV file:")
-        print(data_from_csv)
+        return data_from_csv
     else:
-        print("Failed to load data from the CSV file.")
+        print(f"Failed to load data from the CSV file: {csv_file}")
+        return None
 
 def load_data_from_excel(excel_file):
     # Calling fetch_data_from_excel function from tquery.py
-    data_from_excel = fetch_data_from_excel(csv_file)
+    data_from_excel = fetch_data_from_excel(excel_file)
     if data_from_excel is not None:
-        print("Data from CSV file:")
+        print("Data from excel file:")
         print(data_from_excel)
+        return data_from_excel
     else:
         print("Failed to load data from the Excel file.")
+        return None
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="load data from csv to excel and compare two dataframes.")

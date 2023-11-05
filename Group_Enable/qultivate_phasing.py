@@ -16,6 +16,8 @@ from openpyxl import load_workbook,Workbook
 from openpyxl.styles import Font
 import shutil
 import sys
+import xlsxwriter
+
 current_wrk_dir = os.getcwd()
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
@@ -102,6 +104,7 @@ def merge_sku_definition ():
 		#print(featuring)
 		connect_db(sku_mcn,sku_short_name,featuring)
 	print("####################### Sku updated sucessfull ###################################")
+
 # Define a function to process a row
 def process_row(row):
 	# Assuming the row contains columns 'Name', 'Age', 'Location' as headers
@@ -112,6 +115,7 @@ def process_row(row):
 	# Your processing logic here
 	processed_result = f"Processed: sku_mcn - {sku_mcn}, sku_short_name - {sku_short_name}, featuring - {featuring}"
 	return processed_result
+
 def remove_sku ():
 	print("#######################################################################")
 	print("Removing the Sku data from TSS started....")
@@ -121,6 +125,7 @@ def remove_sku ():
 	#print(phasing_out.stdout)
 	print("Removed the sku data from TSS successfully....")
 	print("#######################################################################")
+
 def push_sku_definition ():
 	# Specify the sheet name you want to read
 	sheet_name = 'sku_definition' # Replace with the actual sheet name
@@ -142,6 +147,7 @@ def push_sku_definition ():
 		student_dict = dict(zip(keys, data))
 		data_list.append(student_dict)
 	connect_db(data_list)
+
 def get_sku_definition():
 	print("#######################################################################")
 	print("Fetching SKU Data from TSS started....")
@@ -193,6 +199,7 @@ def get_sku_definition():
 		# Save both Excel files with matching sheet names
 		wb_main.save(block_folder_path + sheet_name + ".xlsx")
 		wb_backup.save(block_folder_path +sheet_name + "backup.xlsx")
+
 def connect_db(sku_mcn,sku_short_name,featuring):
 	text =  featuring # Example string with a tab character
 	has_whitespace = any(char.isspace() for char in text)
@@ -222,14 +229,14 @@ def connect_db(sku_mcn,sku_short_name,featuring):
 
 def csv_to_excel(input_folder):
 	csv_file = input_folder
-	excel_file = block_folder_path + 'sku_definition.xlsx'
+	excel_file = block_folder_path + '/' + 'sku_definition.xlsx'
 	df = pd.read_csv(csv_file)
 	df.to_excel(excel_file, sheet_name= "sku_definition",index=False)
 	# Import sheets from other Excel files
-	source_excel = block_folder_path + 'sku_definition.xlsx'
+	source_excel = block_folder_path + '/' + 'sku_definition.xlsx'
 	#print(source_excel)
 	sheet_names_to_import = ['sku_definition'] # List of sheet names to import
-	excel_file1 = block_folder_path + 'qultivate_phasing.xlsx'
+	excel_file1 = block_folder_path + '/' + 'qultivate_phasing.xlsx'
 	for sheet_name in sheet_names_to_import:
 		source_df = pd.read_excel(source_excel, sheet_name)
 	with pd.ExcelWriter(excel_file1, engine='openpyxl', mode='a') as writer:
@@ -255,16 +262,55 @@ def compare_dataframes(df1, df2):
 	modified_rows = merge_df[merge_df['_merge'] == 'right_only'].drop(columns=['_merge'])
 	return modified_rows
 
+def expanding_qultivate_sku_columns():
+	df_sheet2 = pd.read_csv(block_folder_path + '/' + 'sku_definition.csv')
+	column_data = df_sheet2.iloc[1:, [0,2]]
+	qultivate_sku_filtered_rows = column_data[column_data.iloc[:,0].str.startswith('SKU') == True]
+	sku_column_headings = qultivate_sku_filtered_rows.values.tolist()
+	return sku_column_headings
+
+def coloring_y_values(val):
+	color = 'background-color: red' if val == 'Y' else ''
+	return color
+
+def fill_qultivate_enable_values(row):
+	if 'Y' in row.values:
+		return 'Y'
+	return 'N'
+
+def qultivate_sku_fill_values(final_df_sheet1):
+	sku_columns = [col for col in final_df_sheet1.columns if col.startswith('SKU_')]
+	def determine_final_value(row):
+		values = [row[col] for col in sku_columns]
+		values = ','.join(values)
+		if 'Y' in values.split(','):
+			return 'Y'
+		elif 'N' in values.split(','):
+			return 'N'
+		else:
+			return '-'
+	for sku_column in sku_columns:
+		final_df_sheet1[sku_column] = final_df_sheet1.apply(lambda row:determine_final_value(row), axis=1)
+	return final_df_sheet1
 
 def expanding_columns():
 	df_sheet1 = pd.read_excel(block_folder_path + '/' + 'qultivate_populates.xlsx', sheet_name='phasing')
 	final_df_sheet1 = convert_to_binary_and_fill_columns(df_sheet1, column_headings)
-	final_df_sheet1.to_excel(block_folder_path + '/' + 'qultivate_phasing.xlsx', sheet_name='qultivate_phasing', index=False)
-
+	final_df_sheet1['qultivate_enable'] = final_df_sheet1.apply(fill_qultivate_enable_values, axis=1)
+	qultivate_sku_columns = expanding_qultivate_sku_columns()
+	for item in qultivate_sku_columns:
+		sku = item[0]
+		values = item[1].split(',')
+		final_df_sheet1[sku] = final_df_sheet1.apply(lambda row: ','.join([row[val] for val in values]), axis=1)
+	final_df_sheet1 = qultivate_sku_fill_values(final_df_sheet1)
+	qultivate_bin_header = [col for col in final_df_sheet1.columns if not col.startswith('SKU_') and col not in ['block_name', 'phasing_id', 'pattern_name', 'pattern_type', 'qultivate_enable']]
+	qultivate_sku_header = [col for col in final_df_sheet1.columns if col.startswith('SKU_')]
+	multi_columns = pd.MultiIndex.from_tuples([('QULTIVATE_BIN',col) if col in qultivate_bin_header else ('QULTIVATE_SKU', col) if col in qultivate_sku_header else ('', col) for col in final_df_sheet1.columns])
+	final_df_sheet1.columns = multi_columns
+	styled_df = final_df_sheet1.style.applymap(coloring_y_values, subset=pd.IndexSlice[:, final_df_sheet1.columns[5:]])
+	styled_df.to_excel(block_folder_path + '/' + 'qultivate_phasing.xlsx', sheet_name='qultivate_phasing', engine='openpyxl')
 
 def merging_columns(column_headings):
-	
-	
 	# Perform reverse process to convert 'Y' and 'N' to binary and integers
 	final_df_sheet1 = pd.read_excel(block_folder_path + '/' + 'qultivate_phasing.xlsx', sheet_name='qultivate_phasing')
 	try:
@@ -276,17 +322,21 @@ def merging_columns(column_headings):
 	
 
 def getting_phasing_csv(folder_path):
+#	print(folder_path,"###",block_folder_path)
 	print("#######################################################################")
 	print("Fetching phasing data from TSS started....")
-	phasing_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--block', block_name, '--query', 'phasing_details_list.query', '--out_path', block_folder_path, '--db', 'PROD']
+	phasing_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--block', block_name, '--query', 'qultivate_phasing_details.query', '--out_path', folder_path, '--db', 'BKUP']
 	phasing_out = subprocess.run(phasing_command, capture_output=True, text=True)
-	#print(phasing_out.stdout)
+	print(phasing_out.stdout)
 	#print(phasing_out.stdout)
 	print("Phasing data fetched from TSS successfully....")
 	print("#######################################################################")
 	csv_file = folder_path + '/' + 'phasing.csv'
+	qultivate_phasing_dataframe = pd.read_csv(csv_file)
+	# Write the DataFrame to an Excel file
+	qultivate_phasing_dataframe.to_excel(block_folder_path + '/' + 'qultivate_populates.xlsx')
 	excel_file = block_folder_path + '/' + 'qultivate_populates.xlsx'
-	column_names = ['phasing_id', 'qultivate_enable', 'qultivate_category', 'qultivate_value_encoded']
+	column_names = ['phasing_id', 'qultivate_enable', 'qultivate_value_encoded']
 	read_input_phasing_csv = pd.read_csv(folder_path + '/' + 'phasing.csv')
 	read_input_phasing_csv = read_input_phasing_csv[column_names]
 	read_input_phasing_csv.to_csv(folder_path + '/' + 'phasing_backup.csv', index=False)
@@ -304,7 +354,9 @@ def populate_skn_data():
 	print(sku_out.stdout)
 	load_csv_to_excel(block_folder_path + '/' + 'sku_definition.csv', block_folder_path + '/' + 'qultivate_populates.xlsx')
 	df_sheet2 = pd.read_excel(block_folder_path + '/' + 'qultivate_populates.xlsx', sheet_name='sku_definition', header=None)
-	column_headings = df_sheet2.iloc[1:, 2].tolist()
+	column_data = df_sheet2.iloc[1:, [0,2]]
+	filtered_rows = column_data[column_data.iloc[:,0].str.startswith('SKU') == False]
+	column_headings = filtered_rows.iloc[:,1].tolist()
 	return column_headings
 
 
@@ -344,7 +396,7 @@ if __name__ == "__main__":
 	elif args.pushfile:
 		block_folder_path = pushfile
 	#if not os.path.exists(block_folder_path):
-		#os.makedirs(block_folder_path, exist_ok=False)	
+		#os.makedirs(block_folder_path, exist_ok=False)
 	
 	start_time = time.time()	
 
@@ -356,13 +408,13 @@ if __name__ == "__main__":
 		column_headings = populate_skn_data()
 		load_csv_to_excel(csv_file, excel_file)
 		expanding_columns()
-		csv_to_excel(block_folder_path + "sku_definition.csv")
+		csv_to_excel(block_folder_path + '/' + "sku_definition.csv")
 		print(f"Data loaded from {csv_file} to {excel_file} successfully.")
 
 	if args.push:
 		column_headings = populate_skn_data()
 		merging_columns(column_headings)
-		columns = ['phasing_id', 'qultivate_enable', 'qultivate_category', 'qultivate_value_encoded']
+		columns = ['phasing_id', 'qultivate_enable', 'qultivate_value_encoded']
 		modified_df = pd.read_excel(block_folder_path + '/' + 'merged_data.xlsx', usecols=columns)
 		#print(modified_df)
 		modified_df.to_csv(block_folder_path + '/' + 'merged_data.csv', index=False)
@@ -371,16 +423,14 @@ if __name__ == "__main__":
 		modified_dataframe = pd.read_csv(block_folder_path + '/' + 'merged_data.csv')
 		#print(modified_dataframe)
 		#filtered_df = modified_dataframe[modified_dataframe.isin(original_dataframe.to_dict('list')).all(axis=1)]
-		filtered_df = modified_df
-		#print(filtered_df)
+		filtered_df = modified_df.dropna()
+		print("filtered dataframe: \n", filtered_df)
 		update_statements = []
 		for index, row in filtered_df.iterrows():
 			values = []
 			for col in filtered_df.columns:
 				if col != 'phasing_id' and not pd.isna(row[col]):
-					if col in ['qultivate_enable', 'qultivate_category']:
-						values.append(f"phasing.{col} = '{row[col]}'")
-					elif col == 'qultivate_value_encoded':
+					if col == 'qultivate_value_encoded':
 						values.append(f"phasing.{col} = {row[col]}")
 			if values:
 				sql = "UPDATE phasing SET {}".format(', '.join(values))

@@ -1,6 +1,7 @@
 import pymysql
 import configparser
 import base64
+import os
 
 def decrypt(encrypted_str):
     try:
@@ -11,19 +12,37 @@ def decrypt(encrypted_str):
         print("Error decrypting:", str(e))
         return None
 
+def create_dummy_config(config_path):
+    if not os.path.exists(config_path):
+        config = configparser.ConfigParser()
+        config['REMOTEDB'] = {
+            'host': 'your_remote_db_host',
+            'port': 'your_remote_db_port',
+            'user': 'your_remote_db_user',
+            'db': 'your_remote_db_name',
+            'encrypted_password': 'your_base64_encoded_password'
+        }
+        config['LOCALDB'] = {
+            'host': 'your_local_db_host',
+            'port': 'your_local_db_port',
+            'user': 'your_local_db_user',
+            'db': 'your_local_db_name',
+            'encrypted_password': 'your_base64_encoded_local_password'
+        }
+        with open(config_path, 'w') as configfile:
+            config.write(configfile)
+            print(f"Configuration file '{config_path}' created. Please fill in the required information.")
+
 def get_database_connection(config_path):
     if config_path is None:
         config_path = "./config.ini"
-    config = configparser.ConfigParser()
-    config.read(config_path)
 
-    # # Determine the configuration file path based on the command-line argument or use the default
-    # if config_path:
-    #     CONFIG_PATH = config_path
-    # else:
-    #     CONFIG_PATH = "./config.ini"
+    print("Before creating or reading the configuration file")
+    if not os.path.exists(config_path):
+        print("Configuration file not found. Creating a dummy configuration.")
+        create_dummy_config(config_path)
+        return None  # Exit the function since the config file is not present
 
-    # Create a ConfigParser and read the configuration file
     config = configparser.ConfigParser()
     config.read(config_path)
 

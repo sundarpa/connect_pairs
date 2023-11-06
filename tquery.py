@@ -19,7 +19,7 @@ import json
 import time
 import warnings
 import subprocess
-from Database import get_database_connection, decrypt
+from Database import *
 import openpyxl
 from openpyxl import load_workbook
 
@@ -55,7 +55,7 @@ def fetch_data_from_csv(csv_filename):
         return df, csv_filename
     except Exception as e:
         print(f"Error reading CSV file: {str(e)}")
-        return None, None
+        return None
 
 # Function to fetch data from an Excel file and return a dictionary of DataFrames
 def fetch_data_from_excel(excel_filename):
@@ -74,6 +74,7 @@ def fetch_data_from_excel(excel_filename):
 # Parse command-line arguments using the imported function
 myargs, config_path, csv_module_name, excel_filename  = parse_argv(sys.argv[1:])
 print(myargs)
+
 if __name__ == '__main__':
 	queriesResult = []
 	finalSheetNames = []
@@ -87,7 +88,6 @@ if __name__ == '__main__':
 		excel_filenames = myargs['excelfile']  # Get the provided Excel filenames as a list
 		excel_files = excel_filenames.split(':')
 		excel_data_dict = {}
-
 
 		for excel_file in excel_files:
 			data_from_excel = fetch_data_from_excel(excel_file)

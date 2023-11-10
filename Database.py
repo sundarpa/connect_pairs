@@ -2,7 +2,7 @@ import pymysql
 import configparser
 import base64
 import os
-
+import sys
 def decrypt(encrypted_str):
     try:
         decrypted_bytes = base64.b64decode(encrypted_str)
@@ -11,7 +11,7 @@ def decrypt(encrypted_str):
     except Exception as e:
         print("Error decrypting:", str(e))
         return None
-
+# Give code If the config is not present in the tool location, create a dummy and ask user to fill up.
 def create_dummy_config(config_path):
     if not os.path.exists(config_path):
         config = configparser.ConfigParser()
@@ -22,22 +22,14 @@ def create_dummy_config(config_path):
             'db': 'your_remote_db_name',
             'encrypted_password': 'your_base64_encoded_password'
         }
-        config['LOCALDB'] = {
-            'host': 'your_local_db_host',
-            'port': 'your_local_db_port',
-            'user': 'your_local_db_user',
-            'db': 'your_local_db_name',
-            'encrypted_password': 'your_base64_encoded_local_password'
-        }
         with open(config_path, 'w') as configfile:
             config.write(configfile)
             print(f"Configuration file '{config_path}' created. Please fill in the required information.")
 
-def get_database_connection(config_path):
+def get_database_connection(config_path, db_name=None):
     if config_path is None:
         config_path = "./config.ini"
 
-    print("Before creating or reading the configuration file")
     if not os.path.exists(config_path):
         print("Configuration file not found. Creating a dummy configuration.")
         create_dummy_config(config_path)
@@ -46,11 +38,22 @@ def get_database_connection(config_path):
     config = configparser.ConfigParser()
     config.read(config_path)
 
-    db_host = config['SEARCHTOOL']['host']
-    db_port = int(config['SEARCHTOOL']['port'])
-    db_user = config['SEARCHTOOL']['user']
-    db_db = config['SEARCHTOOL']['db']
-    encrypted_db_password = config['SEARCHTOOL']['encrypted_password']
+
+    if db_name is None and len(sys.argv) > 2 and sys.argv[1] == '--db':
+        db_name = sys.argv[2].upper()  # Use the provided database name directly and convert to uppercase
+
+    if db_name is not None and db_name not in config:
+        print(f"Database '{db_name}' configuration not found in the configuration file.")
+        print("Config sections:", config.sections())
+        return None
+
+    db_section = db_name or 'TQUERY'  # Use the provided database name or default to 'TQUERY'
+
+    db_host = config[db_section]['host']
+    db_port = int(config[db_section]['port'])
+    db_user = config[db_section]['user']
+    db_db = config[db_section]['db']
+    encrypted_db_password = config[db_section]['encrypted_password']
 
     db_password = decrypt(encrypted_db_password)
 
@@ -65,33 +68,8 @@ def get_database_connection(config_path):
 
         conn = pymysql.connect(**db_credentials)
         conn.autocommit(True)
-        print("Connected to the remote database.")
+        print(f"Connected to the '{db_section}' database.")
         return conn
     except pymysql.Error:
-        print("Failed to connect to the remote database")
-
-        # If the remote connection fails, connect to the local database
-        local_db_host = config['LOCALDB']['host']
-        local_db_port = int(config['LOCALDB']['port'])
-        local_db_user = config['LOCALDB']['user']
-        local_db_db = config['LOCALDB']['db']
-        encrypted_local_db_password = config['LOCALDB']['encrypted_password']
-
-        local_db_password = decrypt(encrypted_local_db_password)
-
-        local_db_credentials = {
-            'host': local_db_host,
-            'port': local_db_port,
-            'user': local_db_user,
-            'passwd': local_db_password,
-            'db': local_db_db
-        }
-
-        try:
-            conn = pymysql.connect(**local_db_credentials)
-            conn.autocommit(True)
-            print("Connected to the local database.")
-            return conn
-        except pymysql.Error:
-            print("Failed to connect to the local database.")
-            return None
+        print(f"Failed to connect to the '{db_section}' database.")
+        return None

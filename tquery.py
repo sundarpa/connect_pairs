@@ -62,7 +62,7 @@ def fetch_data_from_excel(excel_filename):
     try:
         data_dict = {}  # Initialize data_dict as an empty dictionary
         # Load the Excel file using openpyxl
-        wb = load_workbook(excel_filename, data_only=True)
+        wb = load_workbook(excel_filename)
         for sheet_name in wb.sheetnames:
             df = pd.read_excel(excel_filename, sheet_name=sheet_name)
             data_dict[sheet_name] = df
@@ -72,150 +72,146 @@ def fetch_data_from_excel(excel_filename):
         return None
 
 # Parse command-line arguments using the imported function
-myargs, config_path, csv_module_name, excel_filename  = parse_argv(sys.argv[1:])
+myargs, config_path, csv_module_name, excel_filename, query, project = parse_argv(sys.argv[1:])
 print(myargs)
 
 if __name__ == '__main__':
-	queriesResult = []
-	finalSheetNames = []
-	block = ""
-	# json_data_dict = {}
-	start_time = time.time()
-	conn = get_database_connection(config_path)
+    queriesResult = []
+    finalSheetNames = []
+    block = ""
+    # json_data_dict = {}
+    start_time = time.time()
+    conn = get_database_connection(config_path)
 
-	# Check for the 'excelfile' argument
-	if 'excelfile' in myargs:
-		excel_filenames = myargs['excelfile']  # Get the provided Excel filenames as a list
-		excel_files = excel_filenames.split(':')
-		excel_data_dict = {}
+    # Check for the 'excelfile' argument
+    # Check for the 'excelfile' argument
+    if 'excelfile' in myargs:
+        excel_filenames = myargs['excelfile']
+        excel_files = excel_filenames.split(':')
+        excel_data_dict = {}
 
-		for excel_file in excel_files:
-			data_from_excel = fetch_data_from_excel(excel_file)
-			if data_from_excel is not None:
-				excel_data_dict[excel_file] = data_from_excel
-				print(f"Data from Excel file {excel_file}:")
-				for sheet_name, df in data_from_excel.items():
-					print(f"Sheet: {sheet_name}")
-					print(df)
-	else:
-		print("Please provide the --excelfile argument with a path to the Excel file.")
+        for excel_file in excel_files:
+            data_from_excel = fetch_data_from_excel(excel_file)
+            if data_from_excel is not None:
+                excel_data_dict[excel_file] = data_from_excel
+                print(f"Data from Excel file {excel_file}:")
+                for sheet_name, df in data_from_excel.items():
+                    print(f"Sheet: {sheet_name}")
+                    print(df)
 
-	# Check for the 'csvfile' argument
-	if 'csvfile' in myargs:
-		csv_filenames = myargs['csvfile']  # Get the provided CSV filenames as a list
-		csv_files = csv_filenames.split(':')  # Split the filenames by ':' into a list
-		# Created a dictionary to store DataFrames with CSV filenames as keys
-		data_dict = {}
+    # Check for the 'csvfile' argument
+    if 'csvfile' in myargs:
+        csv_filenames = myargs['csvfile']  # Get the provided CSV filenames as a list
+        csv_files = csv_filenames.split(':')  # Split the filenames by ':' into a list
+        # Created a dictionary to store DataFrames with CSV filenames as keys
+        data_dict = {}
 
-		for csv_file in csv_files:
-			data_from_csv, csv_name = fetch_data_from_csv(csv_file)
-			if data_from_csv is not None:
-				data_dict[csv_name] = data_from_csv  # Store the DataFrame with the CSV filename as the key
-				print(f"Data from CSV file {csv_name}:")
-				print(data_from_csv)
-				# print(data_dict)
+        for csv_file in csv_files:
+            data_from_csv, csv_name = fetch_data_from_csv(csv_file)
+            if data_from_csv is not None:
+                data_dict[csv_name] = data_from_csv  # Store the DataFrame with the CSV filename as the key
+                print(f"Data from CSV file {csv_name}:")
+                print(data_from_csv)
+                # print(data_dict)
 
-	#check if csv is in myargs
-	if 'csv' in myargs:
-		csv_module_name = myargs['csv']  # Get the provided CSV module name
-		if csv_module_name:
-			try:
-				imported_module_csv = importlib.import_module(csv_module_name)
-				print(f"Module '{csv_module_name}' imported successfully.")
+    # Check if csv is in myargs
+    if 'csv' in myargs:
+        csv_module_name = myargs['csv']  # Get the provided CSV module name
+        if csv_module_name:
+            try:
+                imported_module_csv = importlib.import_module(csv_module_name)
+                print(f"Module '{csv_module_name}' imported successfully.")
 
-				# Check if the imported module has a 'main' function
-				if hasattr(imported_module_csv, "main") and callable(imported_module_csv.main):
-					imported_module_csv.main("Input_vectors.csv", "mapping.csv")
-				else:
-					print(f"Module '{csv_module_name}' does not have a 'main' function.")
-			except ImportError:
-				print(f"Failed to import module '{csv_module_name}' for CSV data")
+                # Check if the imported module has a 'main' function
+                if hasattr(imported_module_csv, "main") and callable(imported_module_csv.main):
+                    imported_module_csv.main("Input_vectors.csv", "mapping.csv")
+                else:
+                    print(f"Module '{csv_module_name}' does not have a 'main' function.")
+            except ImportError:
+                print(f"Failed to import module '{csv_module_name}' for CSV data")
 
-	try:
-		block = myargs['block'] #Todo: low priority,  remove the block and apply this for other arguments
-	except KeyError:
-		block = None
-	if block is not None:
-		if "," in block:
-			# Split the input string by comma and wrap each part in double quotes
-			output_string = block.replace(",", "\",\"")
-			myargs['block'] = output_string
-	replacedData = openquery(myargs)
-	if replacedData is None:
-		pass
-	else:
-		if conn:
-			print("connected successfully")
-		else:
-			print("Not Connected")
-		splitString = replacedData.split(";")
-		try:
-			cursor = conn.cursor()
-			success = True  # Flag for the success of all operations
+    replacedData = openquery(myargs)
+    if replacedData is None:
+        pass
+    else:
+        if conn:
+            print("connected successfully")
+        else:
+            print("Not Connected")
+        splitString = replacedData.split(";")
+        try:
+            cursor = conn.cursor()
+            success = True  # Flag for the success of all operations
 
-			for cmdoneonly in splitString:
-				cmdoneonly = cmdoneonly.replace('\n', ' ').replace('\n\n', '').lower().strip()
+            for cmdoneonly in splitString:
+                cmdoneonly = cmdoneonly.replace('\n', ' ').replace('\n\n', '').lower().strip()
 
-				if cmdoneonly.strip():
-					if cmdoneonly.startswith(('update', 'delete', 'insert')):
-						try:
-							cursor.execute(cmdoneonly)
-							conn.commit()  # Commit the transaction if the operation is successful
-							print("Operation completed successfully")
-						except Exception as e:
-							conn.rollback()  # Rollback the transaction if an error occurs
-							print(f"Operation failed: {str(e)}")
-							success = False  # Set the success flag to False
-					else:
-						cursor.execute(cmdoneonly)
-						results = cursor.fetchall()
-						if results:
-							df = pd.DataFrame(results, columns=[x[0] for x in cursor.description])
-							queriesResult.append(df)
-							# check if json is in myargs
-							if 'json' in myargs:
-								json_formatted_str = convert_dataframe_to_json(df)
-								json_module_name = myargs.get('json_module', 'reg')  # Default to 'reg' if not specified
+                if cmdoneonly.strip():
+                    if cmdoneonly.startswith(('update', 'delete', 'insert')):
+                        try:
+                            cursor.execute(cmdoneonly)
+                            conn.commit()  # Commit the transaction if the operation is successful
+                            print("Operation completed successfully")
+                        except Exception as e:
+                            conn.rollback()  # Rollback the transaction if an error occurs
+                            print(f"Operation failed: {str(e)}")
+                            success = False  # Set the success flag to False
+                    else:
+                        cursor.execute(cmdoneonly)
+                        results = cursor.fetchall()
+                        if results:
+                            df = pd.DataFrame(results, columns=[x[0] for x in cursor.description])
+                            queriesResult.append(df)
+                            # check if json is in myargs
+                            if 'json' in myargs:
+                                json_formatted_str = convert_dataframe_to_json(df)
+                                json_module_name = myargs.get('json_module', 'reg')  # Default to 'reg' if not specified
 
-								# Dynamically import the module for JSON data
-								imported_module_json = import_module(json_module_name)
+                                # Dynamically import the module for JSON data
+                                imported_module_json = import_module(json_module_name)
 
-								if imported_module_json:
-									if hasattr(imported_module_json, "main") and callable(imported_module_json.main):
-										result = imported_module_json.main(myargs, json_formatted_str)
-									else:
-										print(
-											f"Module '{json_module_name}' for JSON data does not have a 'main' function.")
-							else:
-								sheetName = re.compile(r'^select\s+.+from\s+([a-z_]+)')
-								for names in sheetName.finditer(cmdoneonly):
-									finalSheetNames.append(names.group(1))
-								folderName = myargs['query'][:-6]
-								path = myargs.get('out_path',current_wrk_dir)
-								if path == current_wrk_dir: #todo: lower priority, remove the project, rev, block
-									project_folder = myargs['project']
-									project_folder_path = os.path.join(path,project_folder)
-									rev_folder = myargs['rev']
-									rev_folder_path = os.path.join(project_folder_path,rev_folder)
-									block_folder = myargs['block']
-									block_folder_path = os.path.join(rev_folder_path,block_folder)
-									path = os.path.join(block_folder_path, folderName)
-								os.makedirs(path, exist_ok=True)
-								for n,df in enumerate(queriesResult):
-										#df.to_csv(path + '_dir' + '/' + f'{finalSheetNames[n]}' + '_' + f'{filename[n]}' + '.csv', index=False)
-										df.to_csv(path + '/' + f'{finalSheetNames[n]}' + '.csv', index=False)
-						else:
-							print("The query result doesn't have any data to showcase")
-			cursor.close()
+                                if imported_module_json:
+                                    if hasattr(imported_module_json, "main") and callable(imported_module_json.main):
+                                        result = imported_module_json.main(myargs, json_formatted_str)
+                                    else:
+                                        print(
+                                            f"Module '{json_module_name}' for JSON data does not have a 'main' function.")
+                            else:
+                                sheetName = re.compile(r'^select\s+.+from\s+([a-z_]+)')
+                                for names in sheetName.finditer(cmdoneonly):
+                                    finalSheetNames.append(names.group(1))
+                                folderName = myargs['query'][:-6]
+                                query_file = os.path.basename(myargs['query'])  # Get the query filename
+                                data = myargs.get('out_path', current_wrk_dir)
+                                # Check if there are values in double quotes
+                                double_quoted_values = re.findall(r'"([^"]*)"', cmdoneonly)
+                                if double_quoted_values and data == current_wrk_dir:
+                                    # Create a top-level folder for each value in double quotes
+                                    for value in double_quoted_values:
+                                        # Combine value and query_file to create folder structure
+                                        folder_path = os.path.join(value, query_file)
+                                        # Ensure the folder structure exists
 
-			if success:
-				print("All operations completed successfully")
-			else:
-				print("Some operations failed, transaction rolled back")
-			#print("script execution completed")
-		except pymysql.err.ProgrammingError as except_detail:
-			print("pymysql.err.ProgrammingError: «{}»".format(except_detail))
-		finally:
-			conn.close()
-			end_time = time.time()
-			print("Script successfully completed in:", end_time - start_time, "seconds")
+                                        path = os.path.join(data, folder_path)
+                                        os.makedirs(path, exist_ok=True)
+
+                                # Save the DataFrame to a CSV file inside the query_name folder
+                                for n, df in enumerate(queriesResult):
+                                    csv_filename = os.path.join(data, f'{finalSheetNames[n]}.csv')
+                                    df.to_csv(csv_filename, index=False)
+                                print("CSV files created successfully",csv_filename)
+                        else:
+                            print("The query result doesn't have any data to showcase")
+            cursor.close()
+
+            if success:
+                print("All operations completed successfully")
+            else:
+                print("Some operations failed, transaction rolled back")
+            # print("script execution completed")
+        except pymysql.err.ProgrammingError as except_detail:
+            print("pymysql.err.ProgrammingError: «{}»".format(except_detail))
+        finally:
+            conn.close()
+            end_time = time.time()
+            print("Script successfully completed in:", end_time - start_time, "seconds")

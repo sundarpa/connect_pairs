@@ -3,7 +3,7 @@
 import os
 import pandas as pd
 import argparse
-from ConverterSKUtestCase import convert_to_binary_and_fill_columns, convert_to_binary_and_int
+from ConverterSKUtest import convert_to_binary_and_fill_columns, convert_to_binary_and_int, qultivate_sku_fill_values, coloring_y_values, fill_qultivate_enable_values, load_csv_to_excel
 import configparser
 import base64
 import pymysql
@@ -16,7 +16,7 @@ from openpyxl import load_workbook,Workbook
 from openpyxl.styles import Font
 import shutil
 import sys
-import xlsxwriter
+
 
 current_wrk_dir = os.getcwd()
 abspath = os.path.abspath(__file__)
@@ -54,187 +54,73 @@ def decrypt(config_db):
                 }
             return stage_dict
 
-def merge_sku_definition ():
-	# Read the first Excel file into a DataFrame
-	df1 = pd.read_excel(block_folder_path + 'sku_definition.xlsx')
-	get_sku_definition()
-
-	# Read the second Excel file into another DataFrame
-	df2 = pd.read_excel(block_folder_path +'sku_definitionbackup.xlsx')
-
-	# Merge the two DataFrames on the headers (assuming headers are in the first row)
-	merged_df = pd.merge(df1, df2, on=list(df1.columns), how='outer', indicator=True)
-
-	# Filter out rows that are not unique (present in both DataFrames)
-	unique_rows = merged_df[merged_df['_merge'] != 'both']
-
-	# Print only the rows that are unique in either DataFrame
-	filtered_unique_rows = unique_rows[list(df1.columns)]
-	
-	processed_data = filtered_unique_rows.apply(process_row, axis=1) 
-	# Print the processed data
-	for item in processed_data:
-		if "Processed:" not in item: 
-			#print("#####No new sku definition found to update.######") 
-			continue
-		original_string = item
-		substring_to_remove = "Processed:"
-		modified_string = original_string.replace(substring_to_remove, "")
-		data_string = modified_string
-
-		# Split the data string into a list of key-value pairs
-		key_value_pairs = [pair.strip() for pair in data_string.split(',')]
-
-		# Create an empty dictionary to store the extracted data
-		extracted_data = {}
-
-		# Extract the data into the dictionary
-		for pair in key_value_pairs:
-			key, value = pair.split(' - ')
-			extracted_data[key] = value
-
-		# Extract variables from the extracted_data dictionary
-		sku_mcn = extracted_data['sku_mcn']
-		sku_short_name = extracted_data['sku_short_name']
-		featuring = extracted_data['featuring']
-
-		# Print the extracted variables
-		#print(sku_mcn)
-		#print(sku_short_name)
-		#print(featuring)
-		connect_db(sku_mcn,sku_short_name,featuring)
-	print("####################### Sku updated sucessfull ###################################")
-
-# Define a function to process a row
-def process_row(row):
-	# Assuming the row contains columns 'Name', 'Age', 'Location' as headers
-	sku_mcn = row['sku_mcn']
-	sku_short_name = row['sku_short_name']
-	featuring = row['featuring']
-
-	# Your processing logic here
-	processed_result = f"Processed: sku_mcn - {sku_mcn}, sku_short_name - {sku_short_name}, featuring - {featuring}"
-	return processed_result
-
-def remove_sku ():
-	print("#######################################################################")
-	print("Removing the Sku data from TSS started....")
-	phasing_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--featuring', featuring, '--query', 'remove_sku.query', '--db', 'PROD']
-	phasing_out = subprocess.run(phasing_command, capture_output=True, text=True)
-	#print(phasing_out.stdout)
-	#print(phasing_out.stdout)
-	print("Removed the sku data from TSS successfully....")
-	print("#######################################################################")
-
-def push_sku_definition ():
-	# Specify the sheet name you want to read
-	sheet_name = 'sku_definition' # Replace with the actual sheet name
-
-	# Read the Excel file with the specified sheet name
-	excel_file_path = block_folder_path + 'qultivate_phasing.xlsx'
-	df = pd.read_excel(excel_file_path, sheet_name=sheet_name)
-
-	# Get the first row as keys
-	keys = df.columns.tolist()
-
-	# Initialize a list to store student dictionaries
-	data_list = []
-
-	# Iterate through the rows (excluding the first row)
-	for index, row in df.iterrows():
-		data = row.tolist()
-	# Create a dictionary entry with the keys as keys and the corresponding data as values
-		student_dict = dict(zip(keys, data))
-		data_list.append(student_dict)
-	connect_db(data_list)
-
 def get_sku_definition():
 	print("#######################################################################")
 	print("Fetching SKU Data from TSS started....")
-	stage_dict = decrypt('PROD')
-			# database connection setup
-	conn = pymysql.connect(host=stage_dict['host'], port=stage_dict['port'], user= stage_dict['user'], passwd=stage_dict['password'], db=stage_dict['db'])
-	conn.autocommit(True)
-	cursor = conn.cursor()
-	with conn.cursor() as cursor:
-		query = ("SELECT sku_definition.sku_mcn,sku_definition.sku_short_name,sku_definition.featuring FROM sku_definition JOIN si_revision ON sku_definition.si_revision_fk = si_revision.si_revision_id JOIN project ON si_revision.project_fk = project.project_id  WHERE project.project_name =" +"'"+ project +"'"+" AND si_revision.si_revision_name ="+"'"+ si_rev + "'"+ "AND sku_definition.state != 'Deleted' ;")
-		cursor.execute(query)
-		#result = cursor.fetchall()
-		# Fetch data using cursor
-		data = cursor.fetchall()
+	sku_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--query', 'sku_definition.query', '--out_path', block_folder_path, '--db', 'BKUP']
+	sku_out = subprocess.run(sku_command, capture_output=True, text=True)
+	print(sku_out.stdout)
+	print("SKU Data fetched from TSS successfully....")
+	print("#######################################################################")
+	
 
-		# Get column names from cursor description
-		column_names = [column[0] for column in cursor.description]
+def remove_sku():
+	print("#######################################################################")
+	print("Removing the Sku data from TSS started....")
+	remove_sku_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--featuring', featuring, '--query', 'remove_sku.query']
+	remove_command = subprocess.run(remove_sku_command, capture_output=True, text=True)
+	print(remove_command.stdout)
+	print("Removed the sku data from TSS successfully....")
+	print("#######################################################################")
 
-		# Create a new Excel workbook for the main output file
-		wb_main = Workbook()
+def insert_sku():
+	unique_rows = pd.DataFrame(columns=['sku_mcn','sku_short_name','featuring'])
+	input_file = pd.read_csv(block_folder_path)
+	sku_data_fetch_path = block_folder_path.split('/')
+	output_path = '/'.join(sku_data_fetch_path[:-1]) + '/'
+	print("#######################################################################")
+	print("Fetching SKU Data from TSS started....")
+	sku_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--query', 'sku_definition.query', '--out_path', output_path, '--db', 'BKUP']
+	sku_out = subprocess.run(sku_command, capture_output=True, text=True)
+	print(sku_out.stdout)
+	print("SKU Data fetched from TSS successfully....")
+	print("#######################################################################")
+	existing_data = tuple(pd.read_csv(output_path + '/' + 'sku_definition.csv')['featuring'].values)
+	for _, row in input_file.iterrows():
+		if row['featuring'] in existing_data:
+			print(f"Error: Featuring values already exists - {row['featuring']}")
+		else:
+			unique_rows = unique_rows.append({'sku_mcn':row['sku_mcn'], 'sku_short_name':row['sku_short_name'], 'featuring':row['featuring']}, ignore_index=True)
+	for index,row in unique_rows.iterrows():
+		sku_mcn = row['sku_mcn']
+		sku_short_name = row['sku_short_name']
+		featuring = row['featuring']
+		print("#######################################################################")
+		print("Inserting SKU Data into TSS started....")
+		insert_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--sku_mcn', sku_mcn, '--sku_short_name', sku_short_name, '--featuring', featuring, '--query', 'insert_sku.query']
+		insert_sku_command = subprocess.run(insert_command, capture_output=True, text=True)
+		print(insert_sku_command.stdout)
+		print("Insertion of SKU Data into TSS completed....")
+		print("#######################################################################")
 
-		# Create a new Excel workbook for the backup file
-		wb_backup = Workbook()
+def update_sku():
+	input_file = pd.read_csv(block_folder_path,usecols=['sku_mcn','featuring'])
+	for index, row in input_file.iterrows():
+		sku_mcn = row['sku_mcn']
+		featuring = row['featuring']
+		print("#######################################################################")
+		print("SKU Definition updation started into TSS....")
+		update_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--sku_mcn', sku_mcn, '--featuring', featuring, '--query', 'update_sku.query']
+		print(update_command)
+		update_sku_command = subprocess.run(update_command, capture_output=True, text=True)
+		print(update_sku_command.stdout)
+		print("SKU Definition updation into TSS completed....")
+		print("#######################################################################")
 
-		# Select the active worksheets
-		ws_main = wb_main.active
-		ws_backup = wb_backup.active
-
-		# Set the sheet names to match the filenames
-		sheet_name = "sku_definition"
-		ws_main.title = sheet_name
-		ws_backup.title = sheet_name + "_backup"
-
-		# Write column headings and apply formatting for main output
-		for col_num, column_title in enumerate(column_names, 1):
-			ws_main.cell(row=1, column=col_num, value=column_title)
-			ws_main.cell(row=1, column=col_num).font = Font(bold=True)
-
-		# Write data to main output
-		for row_num, row_data in enumerate(data, 2):
-			for col_num, cell_value in enumerate(row_data, 1):
-				ws_main.cell(row=row_num, column=col_num, value=cell_value)
-
-		# Copy the main output data to the backup sheet
-		for row in ws_main.iter_rows(min_row=1, max_row=ws_main.max_row, min_col=1, max_col=ws_main.max_column):
-			for cell in row:
-				ws_backup[cell.coordinate].value = cell.value
-
-		# Save both Excel files with matching sheet names
-		wb_main.save(block_folder_path + sheet_name + ".xlsx")
-		wb_backup.save(block_folder_path +sheet_name + "backup.xlsx")
-
-def connect_db(sku_mcn,sku_short_name,featuring):
-	text =  featuring # Example string with a tab character
-	has_whitespace = any(char.isspace() for char in text)
-	if has_whitespace:
-		print("################## WARNING MESSAGE ##################")
-		print("#### please remove the sapce and replace with _ ########")
-		print("#### sku should be like No_Modam_w_nav #####")
-		sys.exit()
-	stage_dict = decrypt('PROD')
-			# database connection setup
-	conn = pymysql.connect(host=stage_dict['host'], port=stage_dict['port'], user= stage_dict['user'], passwd=stage_dict['password'], db=stage_dict['db'])
-	conn.autocommit(True)
-	cursor = conn.cursor()
-	with conn.cursor() as cursor:
-		query = ("SELECT si_revision.si_revision_id FROM si_revision JOIN project ON si_revision.project_fk = project.project_id WHERE project.project_name ="+"'"+ project + "'"+"AND si_revision.si_revision_name =" + "'"+si_rev +"'"+";")
-		cursor.execute(query)
-		result = cursor.fetchall()
-		si_rev_id = ', '.join(item[0] for item in result)
-		cursor.close()
-	with conn.cursor() as cursor:
-		query = "INSERT INTO sku_definition(si_revision_fk,sku_mcn,sku_short_name,featuring) VALUES (" + "'" + si_rev_id + "'," + "'"+ sku_mcn + "'," + "'" + sku_short_name + "'," + "'" + featuring + "'" + ")" + ";"
-		cursor.execute(query)
-		# Close the connection
-		cursor.close()
-		conn.close()
-		#print ("connection closed")
-
-def csv_to_excel(input_folder):
-	csv_file = input_folder
-	excel_file = block_folder_path + '/' + 'sku_definition.xlsx'
-	df = pd.read_csv(csv_file)
-	df.to_excel(excel_file, sheet_name= "sku_definition",index=False)
+def csv_to_excel():
+	pd.read_csv(block_folder_path + '/' + 'sku_definition.csv').to_excel(block_folder_path + '/' + 'sku_definition.xlsx',sheet_name='sku_definition',index=False)
 	# Import sheets from other Excel files
 	source_excel = block_folder_path + '/' + 'sku_definition.xlsx'
-	#print(source_excel)
 	sheet_names_to_import = ['sku_definition'] # List of sheet names to import
 	excel_file1 = block_folder_path + '/' + 'qultivate_phasing.xlsx'
 	for sheet_name in sheet_names_to_import:
@@ -246,52 +132,13 @@ def csv_to_excel(input_folder):
 		source_df.to_excel(writer, sheet_name=sheet_name, index=False)
 	print("CSV converted to Excel and sheets imported successfully.")
 
-def load_csv_to_excel(csv_file, excel_file):
-	df = pd.read_csv(csv_file)
-	sheet_name = os.path.splitext(os.path.basename(csv_file))[0]
-	df.to_excel(excel_file, index=False, sheet_name=sheet_name)
-
-
-def create_modified_file(excel_file):
-	df_modidfied = pd.read_excel(excel_file, sheet_name=0)
-	return df_modidfied
-
-
-def compare_dataframes(df1, df2):
-	merge_df = df1.merge(df2, indicator=True, how='outer')
-	modified_rows = merge_df[merge_df['_merge'] == 'right_only'].drop(columns=['_merge'])
-	return modified_rows
-
 def expanding_qultivate_sku_columns():
+	
 	df_sheet2 = pd.read_csv(block_folder_path + '/' + 'sku_definition.csv')
 	column_data = df_sheet2.iloc[1:, [0,2]]
 	qultivate_sku_filtered_rows = column_data[column_data.iloc[:,0].str.startswith('SKU') == True]
 	sku_column_headings = qultivate_sku_filtered_rows.values.tolist()
 	return sku_column_headings
-
-def coloring_y_values(val):
-	color = 'background-color: red' if val == 'Y' else ''
-	return color
-
-def fill_qultivate_enable_values(row):
-	if 'Y' in row.values:
-		return 'Y'
-	return 'N'
-
-def qultivate_sku_fill_values(final_df_sheet1):
-	sku_columns = [col for col in final_df_sheet1.columns if col.startswith('SKU_')]
-	def determine_final_value(row):
-		values = [row[col] for col in sku_columns]
-		values = ','.join(values)
-		if 'Y' in values.split(','):
-			return 'Y'
-		elif 'N' in values.split(','):
-			return 'N'
-		else:
-			return '-'
-	for sku_column in sku_columns:
-		final_df_sheet1[sku_column] = final_df_sheet1.apply(lambda row:determine_final_value(row), axis=1)
-	return final_df_sheet1
 
 def expanding_columns():
 	df_sheet1 = pd.read_excel(block_folder_path + '/' + 'qultivate_populates.xlsx', sheet_name='phasing')
@@ -303,16 +150,21 @@ def expanding_columns():
 		values = item[1].split(',')
 		final_df_sheet1[sku] = final_df_sheet1.apply(lambda row: ','.join([row[val] for val in values]), axis=1)
 	final_df_sheet1 = qultivate_sku_fill_values(final_df_sheet1)
-	qultivate_bin_header = [col for col in final_df_sheet1.columns if not col.startswith('SKU_') and col not in ['block_name', 'phasing_id', 'pattern_name', 'pattern_type', 'qultivate_enable']]
+	qultivate_bin_header = [col for col in final_df_sheet1.columns if not col.startswith('SKU_') and col not in ['block_name', 'phasing_id', 'pattern_name', 'pattern_type', 'platform', 'qultivate_enable']]
 	qultivate_sku_header = [col for col in final_df_sheet1.columns if col.startswith('SKU_')]
 	multi_columns = pd.MultiIndex.from_tuples([('QULTIVATE_BIN',col) if col in qultivate_bin_header else ('QULTIVATE_SKU', col) if col in qultivate_sku_header else ('', col) for col in final_df_sheet1.columns])
 	final_df_sheet1.columns = multi_columns
-	styled_df = final_df_sheet1.style.applymap(coloring_y_values, subset=pd.IndexSlice[:, final_df_sheet1.columns[5:]])
-	styled_df.to_excel(block_folder_path + '/' + 'qultivate_phasing.xlsx', sheet_name='qultivate_phasing', engine='openpyxl')
+	styled_df = final_df_sheet1.style.applymap(coloring_y_values, subset=pd.IndexSlice[:, final_df_sheet1.columns[6:]])
+	# removing empty line between header and data
+	writer = pd.ExcelWriter(block_folder_path + '/' + 'qultivate_phasing.xlsx', engine='xlsxwriter')
+	styled_df.to_excel(writer, sheet_name='qultivate_phasing')
+	writer.sheets['qultivate_phasing'].set_row(2, None, None, {'hidden': True})
+	writer.save()
+	
 
 def merging_columns(column_headings):
 	# Perform reverse process to convert 'Y' and 'N' to binary and integers
-	final_df_sheet1 = pd.read_excel(block_folder_path + '/' + 'qultivate_phasing.xlsx', sheet_name='qultivate_phasing')
+	# final_df_sheet1 = pd.read_excel(block_folder_path + '/' + 'qultivate_phasing.xlsx', sheet_name='qultivate_phasing')
 	try:
 		final_df_sheet1 = pd.read_excel(block_folder_path + '/' + 'qultivate_phasing.xlsx', sheet_name='qultivate_phasing')
 	except Exception as e:
@@ -321,37 +173,30 @@ def merging_columns(column_headings):
 	df_result.to_excel(block_folder_path + '/' + 'merged_data.xlsx', sheet_name='merged', index=False)
 	
 
-def getting_phasing_csv(folder_path):
-#	print(folder_path,"###",block_folder_path)
+def getting_phasing_csv(block_folder_path):
 	print("#######################################################################")
 	print("Fetching phasing data from TSS started....")
-	phasing_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--block', block_name, '--query', 'qultivate_phasing_details.query', '--out_path', folder_path, '--db', 'BKUP']
-	phasing_out = subprocess.run(phasing_command, capture_output=True, text=True)
-	print(phasing_out.stdout)
-	#print(phasing_out.stdout)
+	if args.block:
+		phasing_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--block', block_name, '--platform', platform,'--query', 'qultivate_phasing_details.query', '--out_path', block_folder_path, '--db', 'BKUP']
+		phasing_out = subprocess.run(phasing_command, capture_output=True, text=True)
+		print(phasing_out.stdout)
+	else:
+		phasing_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--platform', platform, '--query', 'phasing.query', '--out_path', block_folder_path, '--db', 'BKUP']
+		phasing_out = subprocess.run(phasing_command, capture_output=True, text=True)
+		print(phasing_out.stdout)
 	print("Phasing data fetched from TSS successfully....")
 	print("#######################################################################")
-	csv_file = folder_path + '/' + 'phasing.csv'
+	csv_file = block_folder_path + '/' + 'phasing.csv'
 	qultivate_phasing_dataframe = pd.read_csv(csv_file)
 	# Write the DataFrame to an Excel file
 	qultivate_phasing_dataframe.to_excel(block_folder_path + '/' + 'qultivate_populates.xlsx')
 	excel_file = block_folder_path + '/' + 'qultivate_populates.xlsx'
 	column_names = ['phasing_id', 'qultivate_enable', 'qultivate_value_encoded']
-	read_input_phasing_csv = pd.read_csv(folder_path + '/' + 'phasing.csv')
-	read_input_phasing_csv = read_input_phasing_csv[column_names]
-	read_input_phasing_csv.to_csv(folder_path + '/' + 'phasing_backup.csv', index=False)
 	return csv_file,excel_file
 
 
 def populate_skn_data():
-	print("#######################################################################")
-	print("Fetching SKU Data from TSS started....")
-	sku_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--query', 'sku_definition.query', '--out_path', block_folder_path, '--db', 'PROD']
-	sku_out = subprocess.run(sku_command, capture_output=True, text=True)
-	print(sku_out.stdout)
-	print("SKU Data fetched from TSS successfully....")
-	sku_out = subprocess.run(sku_command, capture_output=True, text=True)
-	print(sku_out.stdout)
+	get_sku_definition()
 	load_csv_to_excel(block_folder_path + '/' + 'sku_definition.csv', block_folder_path + '/' + 'qultivate_populates.xlsx')
 	df_sheet2 = pd.read_excel(block_folder_path + '/' + 'qultivate_populates.xlsx', sheet_name='sku_definition', header=None)
 	column_data = df_sheet2.iloc[1:, [0,2]]
@@ -364,39 +209,44 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description="load data from csv to excel and compare two dataframes.")
 	parser.add_argument("-pull", action="store_true", help="load csv data to excel")
 	parser.add_argument("-push", action="store_true", help="compare original vs modified dataframe")
-	parser.add_argument("-getsku", action="store_true", help="get sku definition")
+	parser.add_argument("-get_sku", action="store_true", help="get sku definition")
 	parser.add_argument("-remove_sku", action="store_true", help="to remove sku")
 	parser.add_argument("-update_sku", action="store_true", help="updatesku definition")
-	parser.add_argument("-input_file")
 	parser.add_argument('-project', required=False, help='project name')
 	parser.add_argument('-rev', required=False, help='si revision name')
 	parser.add_argument('-block', required=False, help='block name')
+	parser.add_argument('-platform', required=False, help='platform name')
 	parser.add_argument('-out_path', required=False, help='path to store the csvs')
 	parser.add_argument('-featuring', required=False, help='remove sku')
 	parser.add_argument('-pushfile', required=False, help='path to read the csvs')
+	parser.add_argument('-insert_sku', action="store_true", help="to insert sku")
 	
 	args = parser.parse_args()
 	
 	project = args.project
 	si_rev = args.rev
 	block_name = args.block
+	platform =args.platform 
 	featuring = args.featuring
+
+	if args.platform:
+		platform = args.platform
+	else:
+		platform ='ATE'
+
 	if args.out_path:
 		out_path = args.out_path
 	if args.pushfile:
 		pushfile = args.pushfile
 		
-	 
-	#project_folder_path = os.path.join(out_path,project) if args.out_path else os.path.join(pushfile,project)
-	#rev_folder_path = os.path.join(project_folder_path,si_rev)
-	#block_folder_path = os.path.join(rev_folder_path,block_name)
-        #block_folder_path = out_path
 	if args.out_path:
 		block_folder_path = out_path
 	elif args.pushfile:
 		block_folder_path = pushfile
-	#if not os.path.exists(block_folder_path):
-		#os.makedirs(block_folder_path, exist_ok=False)
+
+	# check for out_path to end with '/'
+	if not block_folder_path.endswith('/') and not block_folder_path.endswith('.csv'):
+		block_folder_path += '/'
 	
 	start_time = time.time()	
 
@@ -408,7 +258,7 @@ if __name__ == "__main__":
 		column_headings = populate_skn_data()
 		load_csv_to_excel(csv_file, excel_file)
 		expanding_columns()
-		csv_to_excel(block_folder_path + '/' + "sku_definition.csv")
+		csv_to_excel()
 		print(f"Data loaded from {csv_file} to {excel_file} successfully.")
 
 	if args.push:
@@ -416,15 +266,7 @@ if __name__ == "__main__":
 		merging_columns(column_headings)
 		columns = ['phasing_id', 'qultivate_enable', 'qultivate_value_encoded']
 		modified_df = pd.read_excel(block_folder_path + '/' + 'merged_data.xlsx', usecols=columns)
-		#print(modified_df)
-		modified_df.to_csv(block_folder_path + '/' + 'merged_data.csv', index=False)
-		original_dataframe = pd.read_csv(block_folder_path + '/' + 'phasing_backup.csv')
-		#print(original_dataframe)
-		modified_dataframe = pd.read_csv(block_folder_path + '/' + 'merged_data.csv')
-		#print(modified_dataframe)
-		#filtered_df = modified_dataframe[modified_dataframe.isin(original_dataframe.to_dict('list')).all(axis=1)]
 		filtered_df = modified_df.dropna()
-		print("filtered dataframe: \n", filtered_df)
 		update_statements = []
 		for index, row in filtered_df.iterrows():
 			values = []
@@ -438,7 +280,6 @@ if __name__ == "__main__":
 				update_statements.append(sql)
 		try:
 			stage_dict = decrypt('PROD')
-			# database connection setup
 			conn = pymysql.connect(host=stage_dict['host'], port=stage_dict['port'], user= stage_dict['user'], passwd=stage_dict['password'], db=stage_dict['db'])
 			conn.autocommit(True)
 			cursor = conn.cursor()
@@ -454,13 +295,14 @@ if __name__ == "__main__":
 			print("pymysql.err.ProgrammingError: «{}»".format(except_detail))
 		finally:
 			conn.close()
-	end_time = time.time()
-	if args.getsku:
+	if args.get_sku:
 		get_sku_definition()
 	if args.update_sku:
-		merge_sku_definition()
+		update_sku()
 	if args.remove_sku:
-		remove_sku ()
+		remove_sku()
+	if args.insert_sku:
+		insert_sku()
+	end_time = time.time()
 	print("Script successfully completed in:", end_time - start_time, "seconds")
-#        modified_df.to_csv(csv_file, index=False, mode='w')
 

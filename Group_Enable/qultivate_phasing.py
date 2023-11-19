@@ -57,9 +57,11 @@ def decrypt(config_db):
 def get_sku_definition():
 	print("#######################################################################")
 	print("Fetching SKU Data from TSS started....")
-	sku_command = ['C:\T_QUERY\new_vidya\tquery.py', '--project', project, '--rev', si_rev, '--query', 'sku_definition.query', '--out_path', block_folder_path, '--db', 'BKUP']
-	sku_out = subprocess.run(sku_command, capture_output=True, text=True)
-	print(sku_out.stdout)
+	df1= pd.read_csv(block_folder_path + '/' + 'sku_definition.csv')
+	print(df1)
+	# sku_command = ['C:\T_QUERY\new_vidya\tquery.py', '--project', project, '--rev', si_rev, '--query', 'sku_definition.query', '--out_path', block_folder_path, '--db', 'BKUP']
+	# sku_out = subprocess.run(sku_command, capture_output=True, text=True)
+	# print(sku_out.stdout)
 	print("SKU Data fetched from TSS successfully....")
 	print("#######################################################################")
 	
@@ -67,9 +69,13 @@ def get_sku_definition():
 def remove_sku():
 	print("#######################################################################")
 	print("Removing the Sku data from TSS started....")
-	remove_sku_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--featuring', featuring, '--query', 'remove_sku.query']
-	remove_command = subprocess.run(remove_sku_command, capture_output=True, text=True)
-	print(remove_command.stdout)
+	df1 = pd.read_csv(block_folder_path + '/' + 'sku_definition.csv')
+	df1=df1[df1['featuring'] != args.featuring]
+	print(df1)
+	df1.to_csv(block_folder_path + '/' + 'sku_definition_1.csv', index=False)
+	# remove_sku_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--featuring', featuring, '--query', 'remove_sku.query']
+	# remove_command = subprocess.run(remove_sku_command, capture_output=True, text=True)
+	# print(remove_command.stdout)
 	print("Removed the sku data from TSS successfully....")
 	print("#######################################################################")
 
@@ -77,14 +83,16 @@ def insert_sku():
 	unique_rows = pd.DataFrame(columns=['sku_mcn','sku_short_name','featuring'])
 	input_file = pd.read_csv(block_folder_path)
 	sku_data_fetch_path = block_folder_path.split('/')
-	output_path = '/'.join(sku_data_fetch_path[:-1]) + '/'
-	print("#######################################################################")
-	print("Fetching SKU Data from TSS started....")
-	sku_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--query', 'sku_definition.query', '--out_path', output_path, '--db', 'BKUP']
-	sku_out = subprocess.run(sku_command, capture_output=True, text=True)
-	print(sku_out.stdout)
-	print("SKU Data fetched from TSS successfully....")
-	print("#######################################################################")
+	# output_path = '/'.join(sku_data_fetch_path[:-1]) + '/'
+	get_sku_definition()
+	output_path = args.out_path
+	# print("#######################################################################")
+	# print("Fetching SKU Data from TSS started....")
+	# sku_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--query', 'sku_definition.query', '--out_path', output_path, '--db', 'BKUP']
+	# sku_out = subprocess.run(sku_command, capture_output=True, text=True)
+	# print(sku_out.stdout)
+	# print("SKU Data fetched from TSS successfully....")
+	# print("#######################################################################")
 	existing_data = tuple(pd.read_csv(output_path + '/' + 'sku_definition.csv')['featuring'].values)
 	for _, row in input_file.iterrows():
 		if row['featuring'] in existing_data:
@@ -248,8 +256,9 @@ if __name__ == "__main__":
 		block_folder_path = pushfile
 
 	# check for out_path to end with '/'
-	if not block_folder_path.endswith('/') and not block_folder_path.endswith('.csv'):
-		block_folder_path += '/'
+	if not args.remove_sku:
+		if not block_folder_path.endswith('/') and not block_folder_path.endswith('.csv'):
+			block_folder_path += '/'
 	
 	start_time = time.time()	
 

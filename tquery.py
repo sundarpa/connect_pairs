@@ -25,17 +25,19 @@ from openpyxl import load_workbook
 
 warnings.filterwarnings("ignore")
 
-#to make the current dir where the script resides
+# to make the current dir where the script resides
 current_wrk_dir = os.getcwd()
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
+
 
 def convert_dataframe_to_json(dataframe):
     json_data = dataframe.to_json(orient='records')
     json_body = json.loads(json_data)
     json_formatted_str = json.dumps(json_body, indent=4)
     return json_formatted_str
+
 
 # Define a function to dynamically import a module by name
 def import_module(module_name):
@@ -47,6 +49,7 @@ def import_module(module_name):
         print(f"Failed to import module '{module_name}'.")
         return None
 
+
 # Function to fetch data from a CSV file and return both the DataFrame and the CSV filename
 def fetch_data_from_csv(csv_filename):
     try:
@@ -56,6 +59,7 @@ def fetch_data_from_csv(csv_filename):
     except Exception as e:
         print(f"Error reading CSV file: {str(e)}")
         return None
+
 
 # Function to fetch data from an Excel file and return a dictionary of DataFrames
 def fetch_data_from_excel(excel_filename):
@@ -71,8 +75,9 @@ def fetch_data_from_excel(excel_filename):
         print(f"Error reading Excel file: {str(e)}")
         return None
 
+
 # Parse command-line arguments using the imported function
-myargs, config_path, csv_module_name, excel_filename, query, project = parse_argv(sys.argv[1:])
+myargs, config_path, csv_module_name, excel_filename, query, out_path = parse_argv(sys.argv[1:])
 print(myargs)
 
 if __name__ == '__main__':
@@ -83,7 +88,6 @@ if __name__ == '__main__':
     start_time = time.time()
     conn = get_database_connection(config_path)
 
-    # Check for the 'excelfile' argument
     # Check for the 'excelfile' argument
     if 'excelfile' in myargs:
         excel_filenames = myargs['excelfile']
@@ -108,10 +112,9 @@ if __name__ == '__main__':
 
         for csv_file in csv_files:
             data_from_csv, csv_name = fetch_data_from_csv(csv_file)
+            print(data_from_csv)
             if data_from_csv is not None:
                 data_dict[csv_name] = data_from_csv  # Store the DataFrame with the CSV filename as the key
-                print(f"Data from CSV file {csv_name}:")
-                print(data_from_csv)
                 # print(data_dict)
 
     # Check if csv is in myargs
@@ -165,18 +168,25 @@ if __name__ == '__main__':
                             # check if json is in myargs
                             if 'json' in myargs:
                                 json_formatted_str = convert_dataframe_to_json(df)
-                                json_module_name = myargs.get('json_module', 'reg')  # Default to 'reg' if not specified
+                                json_formatted_results = [json_formatted_str]
 
+                                # Print or return JSON results directly
+                                print(json_formatted_results)
+
+                            else:
                                 # Dynamically import the module for JSON data
+                                json_module_name = myargs.get('json_module', 'reg')  # Default to 'reg' if not specified
                                 imported_module_json = import_module(json_module_name)
 
                                 if imported_module_json:
-                                    if hasattr(imported_module_json, "main") and callable(imported_module_json.main):
-                                        result = imported_module_json.main(myargs, json_formatted_str)
+                                    if hasattr(imported_module_json, "main") and callable(
+                                            imported_module_json.main):
+                                        result = imported_module_json.main(myargs, queriesResult)
+                                        print(result)  # Print or return the result as needed
                                     else:
                                         print(
                                             f"Module '{json_module_name}' for JSON data does not have a 'main' function.")
-                            else:
+
                                 sheetName = re.compile(r'^select\s+.+from\s+([a-z_]+)')
                                 for names in sheetName.finditer(cmdoneonly):
                                     finalSheetNames.append(names.group(1))
@@ -185,21 +195,31 @@ if __name__ == '__main__':
                                 data = myargs.get('out_path', current_wrk_dir)
                                 # Check if there are values in double quotes
                                 double_quoted_values = re.findall(r'"([^"]*)"', cmdoneonly)
-                                if double_quoted_values and data == current_wrk_dir:
-                                    # Create a top-level folder for each value in double quotes
-                                    for value in double_quoted_values:
-                                        # Combine value and query_file to create folder structure
-                                        folder_path = os.path.join(value, query_file)
-                                        # Ensure the folder structure exists
 
-                                        path = os.path.join(data, folder_path)
-                                        os.makedirs(path, exist_ok=True)
+                                # Use folderName as the top-level folder if there are values in double quotes, else use the current working directory
+                                base_folder = os.path.join(current_wrk_dir,
+                                                           folderName) if double_quoted_values else current_wrk_dir
 
-                                # Save the DataFrame to a CSV file inside the query_name folder
-                                for n, df in enumerate(queriesResult):
-                                    csv_filename = os.path.join(data, f'{finalSheetNames[n]}.csv')
-                                    df.to_csv(csv_filename, index=False)
-                                print("CSV files created successfully",csv_filename)
+                                # Create a top-level folder for each value in double quotes or use folderName
+                                for value in double_quoted_values:
+                                    # Combine value and query_file to create folder structure
+                                    folder_path = os.path.join(base_folder, value, query_file)
+                                    # Ensure the folder structure exists
+                                    path = os.path.join(base_folder, folder_path)
+                                    os.makedirs(path, exist_ok=True)
+
+                                    # Save the DataFrame to a CSV file inside the folder_path
+                                    for n, df in enumerate(queriesResult):
+                                        csv_filename = os.path.join(path, f'{finalSheetNames[n]}.csv')
+                                        df.to_csv(csv_filename, index=False)
+                                    print("CSV files created successfully in", csv_filename)
+
+                                # Save the DataFrame to a CSV file in the base_folder if there are no values in double quotes
+                                if not double_quoted_values:
+                                    for n, df in enumerate(queriesResult):
+                                        csv_filename = os.path.join(base_folder, f'{finalSheetNames[n]}.csv')
+                                        df.to_csv(csv_filename, index=False)
+                                    print("CSV files created successfully in", csv_filename)
                         else:
                             print("The query result doesn't have any data to showcase")
             cursor.close()

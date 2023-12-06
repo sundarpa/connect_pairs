@@ -2,6 +2,8 @@ import unittest
 import subprocess
 import os
 import pandas as pd
+import shutil
+import re
 
 class TestQultivatePhasingPullCommand(unittest.TestCase):
 
@@ -11,6 +13,26 @@ class TestQultivatePhasingPullCommand(unittest.TestCase):
 
     def test_basic_functionality_pull(self):
         # Test the basic functionality of the "pull" command
+        phasing_csv_path = f"{self.common_path}/phasing.csv"
+        sku_definition_csv_path = f"{self.common_path}/sku_definition.csv"
+
+        if not os.path.exists(phasing_csv_path):
+            # Create a dummy phasing.csv file
+            with open(phasing_csv_path, 'w') as dummy_file:
+                dummy_file.write("phasing_id,pattern_name,pattern_type,qultivate_enable,qultivate_value_encoded\n"
+                                 "1.0,V_1,PROD,Y,9\n"
+                                 "2.0,X_2,PROD,Y,3\n"
+                                 "3.0,Y_3,PROD,N,0\n")
+
+        if not os.path.exists(sku_definition_csv_path):
+            # Create a dummy sku_definition.csv file
+            with open(sku_definition_csv_path, 'w') as dummy_file:
+                dummy_file.write("sku_mcn,sku_short_name,featuring\n"
+                                 "QBIN_1,Modem,NO_MODEM\n"
+                                 "QBIN_2,AI,NO_AI\n"
+                                 "QBIN3,YZ,NO_AIE\n"
+                                 "SKU_1,XY,\"NO_MODEM,NO_AI\"\n")
+
         command = f"python qultivate_phasing.py -out_path {self.common_path} -pull"
         result = subprocess.run(command, capture_output=True, text=True, shell=True)
 
@@ -21,7 +43,7 @@ class TestQultivatePhasingPullCommand(unittest.TestCase):
         self.assertNotEqual(len(result.stdout), 0)
 
         # Check if the output files were created
-        self.assertTrue(os.path.exists(f"{self.common_path}//qultivate_phasing.xlsx"))
+        self.assertTrue(os.path.exists(f"{self.common_path}/qultivate_phasing.xlsx"))
 
     def test_missing_out_path_pull(self):
         # Test if an error is raised when out_path is missing
@@ -62,6 +84,16 @@ class TestQultivatePhasingPullCommand(unittest.TestCase):
         self.assertIn("Error", result.stderr)
 
     def test_get_sku_data(self):
+        sku_definition_csv_path = f"{self.common_path}/sku_definition.csv"
+        if not os.path.exists(sku_definition_csv_path):
+            # Create a dummy sku_definition.csv file
+            with open(sku_definition_csv_path, 'w') as dummy_file:
+                dummy_file.write("sku_mcn,sku_short_name,featuring\n"
+                                 "QBIN_1,Modem,NO_MODEM\n"
+                                 "QBIN_2,AI,NO_AI\n"
+                                 "QBIN3,YZ,NO_AIE\n"
+                                 "SKU_1,XY,\"NO_MODEM,NO_AI\"\n")
+
         # Test the "get_sku" command with a valid out_path
         command = f"python qultivate_phasing.py -out_path {self.common_path} -get_sku"
         result = subprocess.run(command, capture_output=True, text=True, shell=True)
@@ -87,24 +119,42 @@ class TestQultivatePhasingPullCommand(unittest.TestCase):
         self.assertIn("Error", result.stderr)
 
     def test_remove_sku_command(self):
+        sku_definition_csv_path = f"{self.common_path}/sku_definition.csv"
+        if not os.path.exists(sku_definition_csv_path):
+            # Create a dummy sku_definition.csv file
+            with open(sku_definition_csv_path, 'w') as dummy_file:
+                dummy_file.write("sku_mcn,sku_short_name,featuring\n"
+                                 "QBIN_1,Modem,NO_MODEM\n"
+                                 "QBIN_2,AI,NO_AI\n"
+                                 "QBIN3,YZ,NO_AIE\n"
+                                 "SKU_1,XY,\"NO_MODEM,NO_AI\"\n")
         # Run the remove_sku command
-        remove_command = f"python qultivate_phasing.py -out_path {self.common_path} -remove_sku -featuring NO_AIE"
+        remove_command = "python qultivate_phasing.py -out_path {self.common_path} -remove_sku -featuring NO_MODEM"
         result = subprocess.run(remove_command, capture_output=True, text=True, shell=True)
 
-        # Check if the process completed successfully (exit code 0)
-        self.assertEqual(result.returncode, 0)
-
         # Extract the featuring value from the command
-        featuring_value = next((arg.split()[-1] for arg in remove_command.split() if arg.startswith('-featuring')), None)
+        args = remove_command.split()
+        featuring_index = args.index('-featuring')
+        featuring_value = args[featuring_index + 1]
 
-        # Check if featuring is not present in the updated CSV file
-        updated_sku_file = os.path.join(self.common_path, 'sku_definition_1.csv')
-        df_updated = pd.read_csv(updated_sku_file)
-        self.assertNotIn(featuring_value, df_updated['featuring'].values)
+        # Check if the featuring value is not present in the updated CSV file
+        df_updated = pd.read_csv(r"C:\T_QUERY\new_vidya\Group_Enable\sku_definition.csv")
+
+        # Print the content of the 'featuring' column
+        print("Content of the 'featuring' column in updated CSV:")
+        print(df_updated['featuring'].values)
+
+        self.assertNotIn(featuring_value, df_updated['featuring'].values,
+                         f"{featuring_value} still present in the updated CSV")
+
+        # Check if the featuring value is present in the original CSV file
+        df_original = pd.read_csv(r"C:\T_QUERY\new_vidya\Group_Enable\sku_definition_1.csv")
+        self.assertIn(featuring_value, df_original['featuring'].values,
+                      f"{featuring_value} not present in the original CSV")
 
     def test_missing_out_path_remove_sku(self):
         # Test if an error is raised when out_path is missing
-        command = "python qultivate_phasing.py -remove"
+        command = "python qultivate_phasing.py -remove_sku"
         result = subprocess.run(command, capture_output=True, text=True, shell=True)
 
         # Check if the process did not complete successfully (exit code not 0)

@@ -43,8 +43,18 @@ class TestQultivatePhasingPullCommand(unittest.TestCase):
         self.assertNotEqual(len(result.stdout), 0)
 
         # Check if the output files were created
-        self.assertTrue(os.path.exists(f"{self.common_path}/qultivate_phasing.xlsx"))
+        output_path = f"{self.common_path}/qultivate_phasing.xlsx"
+        self.assertTrue(os.path.exists(output_path))
 
+        golden_output_path = f'{self.common_path}/golden_qultivate_phasing.xlsx'
+        self.assertTrue(os.path.exists(golden_output_path))
+
+        #Read data from output file and golden file
+        generated_df = pd.read_excel(output_path)
+        golden_df = pd.read_excel(golden_output_path)
+
+        #check if dataframes are equal
+        pd.testing.assert_frame_equal(generated_df, golden_df)
     def test_missing_out_path_pull(self):
         # Test if an error is raised when out_path is missing
         command = "python qultivate_phasing.py -pull"

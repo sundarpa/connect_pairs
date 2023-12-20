@@ -3,7 +3,7 @@
 import os
 import pandas as pd
 import argparse
-from ConverterSKUtest import convert_to_binary_and_fill_columns, convert_to_binary_and_int, qultivate_sku_fill_values, coloring_y_values, fill_qultivate_enable_values, load_csv_to_excel
+from ConverterSKUtest import convert_to_binary_and_fill_columns, qultivate_sku_fill_values, coloring_y_values, fill_qultivate_enable_values, load_csv_to_excel
 import configparser
 import base64
 import pymysql
@@ -57,25 +57,60 @@ def decrypt(config_db):
 def get_sku_definition():
 	print("#######################################################################")
 	print("Fetching SKU Data from TSS started....")
-	df1= pd.read_csv(block_folder_path + '/' + 'sku_definition.csv')
+	df1= pd.read_csv(block_folder_path + '/' + 'sku_definition.csv')#Todo: First read the csv  file next time it should updated one
 	print(df1)
 	# sku_command = ['C:\T_QUERY\new_vidya\tquery.py', '--project', project, '--rev', si_rev, '--query', 'sku_definition.query', '--out_path', block_folder_path, '--db', 'BKUP']
 	# sku_out = subprocess.run(sku_command, capture_output=True, text=True)
 	# print(sku_out.stdout)
 	print("SKU Data fetched from TSS successfully....")
 	print("#######################################################################")
-	
+
 
 def remove_sku():
+
 	print("#######################################################################")
 	print("Removing the Sku data from TSS started....")
 	df1 = pd.read_csv(block_folder_path + '/' + 'sku_definition.csv')
-	df1=df1[df1['featuring'] != args.featuring]
-	print(df1)
-	df1.to_csv(block_folder_path + '/' + 'sku_definition_1.csv', index=False)
-	# remove_sku_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--featuring', featuring, '--query', 'remove_sku.query']
-	# remove_command = subprocess.run(remove_sku_command, capture_output=True, text=True)
-	# print(remove_command.stdout)
+	print("Input df:", df1)
+	df1 = df1[df1['featuring'] != args.featuring]
+	print("df1 after removing featuring:", df1)
+	# df1.to_csv(block_folder_path + '/' + 'sku_definition_1.csv', index=False)
+	# Check if the column exists in the qultivate_phasing.xlsx file
+	excel_file_path = block_folder_path + '/' + 'qultivate_phasing.xlsx'
+	if os.path.exists(excel_file_path):
+		# Read the DataFrame from the Excel file
+		df_qultivate_phasing = pd.read_excel(excel_file_path, sheet_name='qultivate_phasing',skiprows=1)
+		print("df_qultivate_phasing:",df_qultivate_phasing)
+
+		# Check if the column exists in the DataFrame
+		column_name = args.featuring
+		if column_name in df_qultivate_phasing.columns:
+			# Remove the column from the DataFrame
+			df_qultivate_phasing.drop(columns=[column_name], inplace=True)
+			# print(df_qultivate_phasing)
+			# Columns to exclude
+			exclude_columns = ['phasing_id','pattern_name','pattern_type','qultivate_enable']
+			# Extracting columns not in the exclude_columns list
+			column_headings = [col for col in df_qultivate_phasing.columns if col not in exclude_columns]
+			column_heading = []
+			for col in column_headings:
+				if not col.startswith(('SKU','Unnamed')):
+					column_heading.append(col)
+			# print(column_heading)
+			x=convert_to_binary_and_int(df_qultivate_phasing,column_heading)
+			print("phasing_csv:",x)
+
+			# df1.to_csv(block_folder_path + '/' + 'sku_definition_1.csv', index=False)
+			# Save the updated DataFrame back to the Excel file
+			# with pd.ExcelWriter(excel_file_path, engine='openpyxl') as writer:
+			# 	df_qultivate_phasing.to_excel(writer, sheet_name='qultivate_phasing', index=False)
+
+	# 		print(f"Removed column '{column_name}' from qultivate_phasing.xlsx successfully.")
+	# 	else:
+	# 		print(f"Error: Column '{column_name}' not found in qultivate_phasing.xlsx.")
+	# else:
+	# 	print("Error: qultivate_phasing.xlsx file not found.")
+
 	print("Removed the sku data from TSS successfully....")
 	print("#######################################################################")
 
@@ -140,7 +175,6 @@ def csv_to_excel():
 	print("CSV converted to Excel and sheets imported successfully.")
 
 def expanding_qultivate_sku_columns():
-	
 	df_sheet2 = pd.read_csv(block_folder_path + '/' + 'sku_definition.csv')
 	column_data = df_sheet2.iloc[1:, [0,2]]
 	qultivate_sku_filtered_rows = column_data[column_data.iloc[:,0].str.startswith('SKU') == True]
@@ -170,18 +204,20 @@ def expanding_columns():
 	# styled_df.to_excel(writer, sheet_name='qultivate_phasing')
 	# writer.sheets['qultivate_phasing'].set_row(2, None, None, {'hidden': True})
 	# writer.save()
-	
 
 def merging_columns(column_headings):
 	# Perform reverse process to convert 'Y' and 'N' to binary and integers
 	# final_df_sheet1 = pd.read_excel(block_folder_path + '/' + 'qultivate_phasing.xlsx', sheet_name='qultivate_phasing')
 	try:
 		final_df_sheet1 = pd.read_excel(block_folder_path + '/' + 'qultivate_phasing.xlsx', sheet_name='qultivate_phasing')
+		print("##:",final_df_sheet1)
+		print("**:",column_headings)
+		print(args.featuring)
 	except Exception as e:
     		print("Error:", e)
+
 	df_result = convert_to_binary_and_int(final_df_sheet1, column_headings)
 	df_result.to_excel(block_folder_path + '/' + 'merged_data.xlsx', sheet_name='merged', index=False)
-	
 
 def getting_phasing_csv(block_folder_path):
 	# print("#######################################################################")
@@ -205,16 +241,94 @@ def getting_phasing_csv(block_folder_path):
 	return csv_file,excel_file
 
 
+# def populate_skn_data():
+# 	# get_sku_definition()
+# 	# load_csv_to_excel(block_folder_path + '/' + 'sku_definition.csv', block_folder_path + '/' + 'qultivate_populates.xlsx')
+# 	# df_sheet2 = pd.read_excel(block_folder_path + '/' + 'qultivate_populates.xlsx', sheet_name='sku_definition', header=None)
+# 	load_csv_to_excel(block_folder_path + '/' + 'updated_file.csv',
+# 					  block_folder_path + '/' + 'qultivate_populates.xlsx')
+# 	df_sheet2 = pd.read_excel(block_folder_path + '/' + 'qultivate_populates.xlsx', sheet_name='updated_file',
+# 							  header=None)
+# 	print(block_folder_path)
+# 	# column_data = df_sheet2.iloc[1:, [0,2]]
+# 	# filtered_rows = column_data[column_data.iloc[:,0].str.startswith('SKU') == False]
+# 	# column_headings = filtered_rows.iloc[:,1].tolist()
+# 	# return column_headings
+# 	# Sort the DataFrame based on the 'order' column
+# 	df_updated_sorted = df_sheet2.sort_values(by='order')
+# 	# Extract the required columns
+# 	column_data = df_updated_sorted[['sku_mcn', 'featuring', 'order']]
+#
+# 	# Filter out rows starting with 'SKU'
+# 	filtered_rows = column_data[~column_data['sku_mcn'].str.startswith('SKU')]
+#
+# 	# Get the column headings and order
+# 	column_headings = filtered_rows['featuring'].tolist()
+# 	order_column = filtered_rows['order'].tolist()
+# 	print(order_column)
+# 	return column_headings, order_column
 def populate_skn_data():
-	# get_sku_definition()
-	load_csv_to_excel(block_folder_path + '/' + 'sku_definition.csv', block_folder_path + '/' + 'qultivate_populates.xlsx')
-	df_sheet2 = pd.read_excel(block_folder_path + '/' + 'qultivate_populates.xlsx', sheet_name='sku_definition', header=None)
-	print(block_folder_path)
-	column_data = df_sheet2.iloc[1:, [0,2]]
-	filtered_rows = column_data[column_data.iloc[:,0].str.startswith('SKU') == False]
-	column_headings = filtered_rows.iloc[:,1].tolist()
-	return column_headings
+	load_csv_to_excel(block_folder_path + '/' + 'sku_definition.csv',
+					  block_folder_path + '/' + 'qultivate_populates.xlsx')
 
+	# Read the Excel file into a DataFrame
+	df_sheet2 = pd.read_excel(block_folder_path + '/' + 'qultivate_populates.xlsx', sheet_name='sku_definition',
+							  index_col=None)
+	print("Columns of df_sheet2:", df_sheet2.columns)
+
+	# Check if 'order' column is present in the DataFrame
+	if 'order' not in df_sheet2.columns:
+		print("Error: 'order' column not found in the DataFrame.")
+
+	df_updated_sorted = df_sheet2.sort_values(by='order')
+	column_data = df_updated_sorted[['sku_mcn', 'featuring', 'order']]
+	filtered_rows = column_data[~column_data['sku_mcn'].str.startswith('SKU')]
+	column_headings = filtered_rows['featuring'].tolist()
+	order_column = filtered_rows['order'].tolist()
+	return column_headings
+	#
+	# print("Column Headings:", column_headings)  # Print the column heading
+
+
+def interchange_columns(df, col1, col2):
+    # Print DataFrame before interchange
+    print("DataFrame before interchange:")
+    print(df)
+
+    # Interchange columns
+    df[col1], df[col2] = df[col2].copy(), df[col1].copy()
+
+    # Rename columns
+    df.rename(columns={col1: col2, col2: col1}, inplace=True)
+
+    # Print DataFrame after interchange
+    print("\nDataFrame after interchange:")
+    print(df)
+
+    # Save the updated DataFrame back to the same Excel file
+    with pd.ExcelWriter('qultivate_phasing.xlsx', engine='openpyxl') as writer:
+        df.to_excel(writer, sheet_name='qultivate_phasing', index=False)
+
+    print("Updated DataFrame saved to qultivate_phasing.xlsx")
+
+def convert_to_binary_and_int(df, headings):
+    # Convert 'Y' and 'N' to binary values for columns from 'Sheet2'
+	for col in headings:
+		df[col] = df[col].apply(lambda x: 1 if x == 'Y' else 2 if x == 'N' else 0)
+
+    # Convert binary columns back to integer 'qultivate_value_encoded' column
+	df['qultivate_value_encoded'] = df[headings].apply(lambda row: int(''.join(map(str, row)), 3), axis=1)
+
+    # Find the index of the first heading from 'Sheet2'
+	first_heading_index = df.columns.get_loc(headings[0])
+
+    # Insert 'qultivate_value_encoded' column before the first heading from 'Sheet2'
+	df.insert(first_heading_index, 'qultivate_value_encoded', df.pop('qultivate_value_encoded'))
+
+    # Drop the heading columns taken from Sheet2
+	df.drop(columns=headings, inplace=True)
+
+	return df
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description="load data from csv to excel and compare two dataframes.")
@@ -231,9 +345,13 @@ if __name__ == "__main__":
 	parser.add_argument('-featuring', required=False, help='remove sku')
 	parser.add_argument('-pushfile', required=False, help='path to read the csvs')
 	parser.add_argument('-insert_sku', action="store_true", help="to insert sku")
-	
+	parser.add_argument("-interchange", action="store_true", help="Interchange two columns")
+	parser.add_argument("-col1", required=False, help="Name of the first column to interchange")
+	parser.add_argument("-col2", required=False, help="Name of the second column to interchange")
+
 	args = parser.parse_args()
-	
+	df = pd.read_excel('qultivate_phasing.xlsx')
+
 	project = args.project
 	si_rev = args.rev
 	block_name = args.block
@@ -310,6 +428,8 @@ if __name__ == "__main__":
 		# 	print("pymysql.err.ProgrammingError: «{}»".format(except_detail))
 		# finally:
 		# 	conn.close()
+
+
 	if args.get_sku:
 		get_sku_definition()
 	if args.update_sku:
@@ -318,6 +438,13 @@ if __name__ == "__main__":
 		remove_sku()
 	if args.insert_sku:
 		insert_sku()
+
+	if args.interchange:
+		if args.col1 in df.columns and args.col2 in df.columns:
+			interchange_columns(df, args.col1, args.col2)
+		else:
+			print(f"Error: One or both of the specified columns ({args.col1}, {args.col2}) do not exist.")
+
 	end_time = time.time()
 	print("Script successfully completed in:", end_time - start_time, "seconds")
 

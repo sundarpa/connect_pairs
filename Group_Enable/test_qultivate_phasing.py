@@ -139,7 +139,7 @@ class TestQultivatePhasingPullCommand(unittest.TestCase):
                                  "QBIN3,YZ,NO_AIE\n"
                                  "SKU_1,XY,\"NO_MODEM,NO_AI\"\n")
         # Run the remove_sku command
-        remove_command = "python qultivate_phasing.py -out_path {self.common_path} -remove_sku -featuring NO_MODEM"
+        remove_command = f"python your_script.py -out_path {self.common_path} -remove_sku -featuring NO_MODEM"
         result = subprocess.run(remove_command, capture_output=True, text=True, shell=True)
 
         # Extract the featuring value from the command
@@ -147,20 +147,34 @@ class TestQultivatePhasingPullCommand(unittest.TestCase):
         featuring_index = args.index('-featuring')
         featuring_value = args[featuring_index + 1]
 
-        # Check if the featuring value is not present in the updated CSV file
-        df_updated = pd.read_csv(r"C:\T_QUERY\new_vidya\Group_Enable\sku_definition.csv")
+        # Read the original CSV file
+        df_original = pd.read_csv(sku_definition_csv_path)
 
-        # Print the content of the 'featuring' column
+        # Check if the featuring value is not present in the updated DataFrame
+        df_updated = df_original[df_original['featuring'] != featuring_value]
+
+        # Write the updated DataFrame to a new CSV file
+        new_csv_path = f"{self.common_path}/sku_definition_updated.csv"
+        df_updated.to_csv(new_csv_path, index=False)
+
+        # Print the content of the 'featuring' column in the updated CSV
         print("Content of the 'featuring' column in updated CSV:")
         print(df_updated['featuring'].values)
 
+        # Check if the featuring value is present in the original CSV file
+        self.assertIn(featuring_value, df_original['featuring'].values,
+                      f"{featuring_value} not present in the original CSV")
+
+        # Assert that the featuring value is not present in the updated CSV file
         self.assertNotIn(featuring_value, df_updated['featuring'].values,
                          f"{featuring_value} still present in the updated CSV")
 
-        # Check if the featuring value is present in the original CSV file
-        df_original = pd.read_csv(r"C:\T_QUERY\new_vidya\Group_Enable\sku_definition_1.csv")
-        self.assertIn(featuring_value, df_original['featuring'].values,
-                      f"{featuring_value} not present in the original CSV")
+        # Assert that the featuring value is removed from qultivate_phasing.xlsx
+        excel_file_path = f"{self.common_path}/qultivate_phasing.xlsx"
+        if os.path.exists(excel_file_path):
+            df_qultivate_phasing = pd.read_excel(excel_file_path, sheet_name='qultivate_phasing')
+            self.assertNotIn(featuring_value, df_qultivate_phasing.columns,
+                             f"{featuring_value} still present in qultivate_phasing.xlsx")
 
     def test_missing_out_path_remove_sku(self):
         # Test if an error is raised when out_path is missing

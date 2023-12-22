@@ -10,12 +10,7 @@ import pymysql
 import re
 import time
 import subprocess
-from os.path import abspath, dirname
-import shutil
-from openpyxl import load_workbook,Workbook
-from openpyxl.styles import Font
-import shutil
-import sys
+
 
 
 current_wrk_dir = os.getcwd()
@@ -59,15 +54,11 @@ def get_sku_definition():
 	print("Fetching SKU Data from TSS started....")
 	df1= pd.read_csv(block_folder_path + '/' + 'sku_definition.csv')#Todo: First read the csv  file next time it should updated one
 	print(df1)
-	# sku_command = ['C:\T_QUERY\new_vidya\tquery.py', '--project', project, '--rev', si_rev, '--query', 'sku_definition.query', '--out_path', block_folder_path, '--db', 'BKUP']
-	# sku_out = subprocess.run(sku_command, capture_output=True, text=True)
-	# print(sku_out.stdout)
 	print("SKU Data fetched from TSS successfully....")
 	print("#######################################################################")
 
 
 def remove_sku():
-
 	print("#######################################################################")
 	print("Removing the Sku data from TSS started....")
 	df1 = pd.read_csv(block_folder_path + '/' + 'sku_definition.csv')
@@ -87,8 +78,6 @@ def remove_sku():
 		if column_name in df_qultivate_phasing.columns:
 			# Remove the column from the DataFrame
 			df_qultivate_phasing.drop(columns=[column_name], inplace=True)
-			# print(df_qultivate_phasing)
-			# Columns to exclude
 			exclude_columns = ['phasing_id','pattern_name','pattern_type','qultivate_enable']
 			# Extracting columns not in the exclude_columns list
 			column_headings = [col for col in df_qultivate_phasing.columns if col not in exclude_columns]
@@ -96,21 +85,8 @@ def remove_sku():
 			for col in column_headings:
 				if not col.startswith(('SKU','Unnamed')):
 					column_heading.append(col)
-			# print(column_heading)
 			x=convert_to_binary_and_int(df_qultivate_phasing,column_heading)
 			print("phasing_csv:",x)
-
-			# df1.to_csv(block_folder_path + '/' + 'sku_definition_1.csv', index=False)
-			# Save the updated DataFrame back to the Excel file
-			# with pd.ExcelWriter(excel_file_path, engine='openpyxl') as writer:
-			# 	df_qultivate_phasing.to_excel(writer, sheet_name='qultivate_phasing', index=False)
-
-	# 		print(f"Removed column '{column_name}' from qultivate_phasing.xlsx successfully.")
-	# 	else:
-	# 		print(f"Error: Column '{column_name}' not found in qultivate_phasing.xlsx.")
-	# else:
-	# 	print("Error: qultivate_phasing.xlsx file not found.")
-
 	print("Removed the sku data from TSS successfully....")
 	print("#######################################################################")
 
@@ -121,13 +97,6 @@ def insert_sku():
 	# output_path = '/'.join(sku_data_fetch_path[:-1]) + '/'
 	get_sku_definition()
 	output_path = args.out_path
-	# print("#######################################################################")
-	# print("Fetching SKU Data from TSS started....")
-	# sku_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--query', 'sku_definition.query', '--out_path', output_path, '--db', 'BKUP']
-	# sku_out = subprocess.run(sku_command, capture_output=True, text=True)
-	# print(sku_out.stdout)
-	# print("SKU Data fetched from TSS successfully....")
-	# print("#######################################################################")
 	existing_data = tuple(pd.read_csv(output_path + '/' + 'sku_definition.csv')['featuring'].values)
 	for _, row in input_file.iterrows():
 		if row['featuring'] in existing_data:
@@ -164,10 +133,6 @@ def csv_to_excel():
 	pd.read_csv(block_folder_path + '/' + 'sku_definition.csv').to_excel(block_folder_path + '/' + 'sku_definition.xlsx',sheet_name='sku_definition',index=False)
 	# Import sheets from other Excel files
 	source_excel = block_folder_path + '/' + 'sku_definition.xlsx'
-	# sheet_names_to_import = ['sku_definition'] # List of sheet names to import
-	# excel_file1 = block_folder_path + '/' + 'qultivate_phasing.xlsx'
-	# for sheet_name in sheet_names_to_import:
-	# 	source_df = pd.read_excel(source_excel, sheet_name)
 	sku_df = pd.read_excel(source_excel)
 	with pd.ExcelWriter(block_folder_path + '/' + 'qultivate_phasing.xlsx', engine='openpyxl', mode='a') as writer:
 		sku_df.to_excel(writer, sheet_name='sku_definition', index=False)
@@ -199,15 +164,7 @@ def expanding_columns():
 	with pd.ExcelWriter(block_folder_path + '/' + 'qultivate_phasing.xlsx', engine='openpyxl') as writer:
 		styled_df.to_excel(writer, sheet_name='qultivate_phasing')
 
-	# removing empty line between header and data
-	# writer = pd.ExcelWriter(block_folder_path + '/' + 'qultivate_phasing.xlsx', engine='xlsxwriter')
-	# styled_df.to_excel(writer, sheet_name='qultivate_phasing')
-	# writer.sheets['qultivate_phasing'].set_row(2, None, None, {'hidden': True})
-	# writer.save()
-
 def merging_columns(column_headings):
-	# Perform reverse process to convert 'Y' and 'N' to binary and integers
-	# final_df_sheet1 = pd.read_excel(block_folder_path + '/' + 'qultivate_phasing.xlsx', sheet_name='qultivate_phasing')
 	try:
 		final_df_sheet1 = pd.read_excel(block_folder_path + '/' + 'qultivate_phasing.xlsx', sheet_name='qultivate_phasing')
 		print("##:",final_df_sheet1)
@@ -220,53 +177,12 @@ def merging_columns(column_headings):
 	df_result.to_excel(block_folder_path + '/' + 'merged_data.xlsx', sheet_name='merged', index=False)
 
 def getting_phasing_csv(block_folder_path):
-	# print("#######################################################################")
-	# print("Fetching phasing data from TSS started....")
-	# if args.block:
-	# 	phasing_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--block', block_name, '--platform', platform,'--query', 'qultivate_phasing_details.query', '--out_path', block_folder_path, '--db', 'BKUP']
-	# 	phasing_out = subprocess.run(phasing_command, capture_output=True, text=True)
-	# 	print(phasing_out.stdout)
-	# else:
-	# 	phasing_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--platform', platform, '--query', 'phasing.query', '--out_path', block_folder_path, '--db', 'BKUP']
-	# 	phasing_out = subprocess.run(phasing_command, capture_output=True, text=True)
-	# 	print(phasing_out.stdout)
-	# print("Phasing data fetched from TSS successfully....")
-	# print("#######################################################################")
 	csv_file = block_folder_path + '/' + 'phasing.csv'
 	qultivate_phasing_dataframe = pd.read_csv(csv_file)
-	# Write the DataFrame to an Excel file
 	qultivate_phasing_dataframe.to_excel(block_folder_path + '/' + 'qultivate_populates.xlsx')
 	excel_file = block_folder_path + '/' + 'qultivate_populates.xlsx'
-	# column_names = ['phasing_id', 'qultivate_enable', 'qultivate_value_encoded']
 	return csv_file,excel_file
 
-
-# def populate_skn_data():
-# 	# get_sku_definition()
-# 	# load_csv_to_excel(block_folder_path + '/' + 'sku_definition.csv', block_folder_path + '/' + 'qultivate_populates.xlsx')
-# 	# df_sheet2 = pd.read_excel(block_folder_path + '/' + 'qultivate_populates.xlsx', sheet_name='sku_definition', header=None)
-# 	load_csv_to_excel(block_folder_path + '/' + 'updated_file.csv',
-# 					  block_folder_path + '/' + 'qultivate_populates.xlsx')
-# 	df_sheet2 = pd.read_excel(block_folder_path + '/' + 'qultivate_populates.xlsx', sheet_name='updated_file',
-# 							  header=None)
-# 	print(block_folder_path)
-# 	# column_data = df_sheet2.iloc[1:, [0,2]]
-# 	# filtered_rows = column_data[column_data.iloc[:,0].str.startswith('SKU') == False]
-# 	# column_headings = filtered_rows.iloc[:,1].tolist()
-# 	# return column_headings
-# 	# Sort the DataFrame based on the 'order' column
-# 	df_updated_sorted = df_sheet2.sort_values(by='order')
-# 	# Extract the required columns
-# 	column_data = df_updated_sorted[['sku_mcn', 'featuring', 'order']]
-#
-# 	# Filter out rows starting with 'SKU'
-# 	filtered_rows = column_data[~column_data['sku_mcn'].str.startswith('SKU')]
-#
-# 	# Get the column headings and order
-# 	column_headings = filtered_rows['featuring'].tolist()
-# 	order_column = filtered_rows['order'].tolist()
-# 	print(order_column)
-# 	return column_headings, order_column
 def populate_skn_data():
 	load_csv_to_excel(block_folder_path + '/' + 'sku_definition.csv',
 					  block_folder_path + '/' + 'qultivate_populates.xlsx')
@@ -286,8 +202,6 @@ def populate_skn_data():
 	column_headings = filtered_rows['featuring'].tolist()
 	order_column = filtered_rows['order'].tolist()
 	return column_headings
-	#
-	# print("Column Headings:", column_headings)  # Print the column heading
 
 
 def interchange_columns(df, col1, col2):
@@ -397,38 +311,8 @@ if __name__ == "__main__":
 		columns = ['phasing_id', 'pattern_name','pattern_type','qultivate_enable', 'qultivate_value_encoded']
 		modified_df = pd.read_excel(block_folder_path + '/' + 'merged_data.xlsx', usecols=columns)
 		filtered_df = modified_df.dropna()
-		# update_statements = []
-		# print(filtered_df)
 		filtered_df.to_csv(block_folder_path + '/' + 'phasing.csv',index=False)
 		print("Qultivate data successfully updated")
-		# for index, row in filtered_df.iterrows():
-		# 	values = []
-		# 	for col in filtered_df.columns:
-		# 		if col != 'phasing_id' and not pd.isna(row[col]):
-		# 			if col == 'qultivate_value_encoded':
-		# 				values.append(f"phasing.{col} = {row[col]}")
-		# 	if values:
-		# 		sql = "UPDATE phasing SET {}".format(', '.join(values))
-		# 		sql += " WHERE phasing.phasing_id = '{}';".format(row['phasing_id'])
-		# 		update_statements.append(sql)
-		# try:
-		# 	stage_dict = decrypt('PROD')
-		# 	conn = pymysql.connect(host=stage_dict['host'], port=stage_dict['port'], user= stage_dict['user'], passwd=stage_dict['password'], db=stage_dict['db'])
-		# 	conn.autocommit(True)
-		# 	cursor = conn.cursor()
-		# 	for statement in update_statements:
-		# 		if statement:
-		# 			print(statement)
-		# 			cursor.execute(statement)
-		# 	cursor.close()
-		# 	print("Qultivate data successfully updated")
-		# latest_modified_dataframe = pd.read_excel(block_folder_path + '/' + 'merged_data.xlsx', usecols=columns)
-		# latest_modified_dataframe.to_csv(block_folder_path + '/' + 'phasing_backup.csv', index=False)
-		# except pymysql.err.ProgrammingError as except_detail:
-		# 	print("pymysql.err.ProgrammingError: «{}»".format(except_detail))
-		# finally:
-		# 	conn.close()
-
 
 	if args.get_sku:
 		get_sku_definition()

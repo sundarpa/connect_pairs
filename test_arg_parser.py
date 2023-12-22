@@ -1,8 +1,9 @@
 import unittest
 from arg_parser import parse_argv
 
-class TestParseArgv(unittest.TestCase):
+from openpyxl import Workbook
 
+class TestParseArgv(unittest.TestCase):
     def test_with_key_value(self):
         argv = ["--name", "Kushi", "--age", "25"]
         opts = parse_argv(argv)

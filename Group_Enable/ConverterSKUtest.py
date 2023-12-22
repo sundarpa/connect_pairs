@@ -33,8 +33,12 @@ def int_to_base3_binary_and_yn(n):
 
 def convert_to_binary_and_fill_columns(df, headings):
     # Replace empty values in the first column with 0
+
 #	print(headings)
 	full_dataframe = df
+	print(headings)
+	full_dataframe = df
+	print(df)
 
 	df['qultivate_value_encoded'].fillna(0, inplace=True)
 
@@ -42,9 +46,17 @@ def convert_to_binary_and_fill_columns(df, headings):
 	df = df['qultivate_value_encoded'].apply(int_to_base3_binary_and_yn).apply(lambda x: pd.Series(x))
     # Define your external headings
 	external_headings = [headings]
+
     # Ensure the number of columns in the DataFrame matches the number of external headings
     
 	df = df.fillna('-').astype(str)
+
+
+
+    # Ensure the number of columns in the DataFrame matches the number of external headings
+
+	df = df.fillna('-').astype(str)
+	# print(df)
 
     # Rearrange the columns to start from the maximum column to the minimum column
 	df.columns = [f'col{i + 1}' for i in range(df.shape[1])]
@@ -55,6 +67,10 @@ def convert_to_binary_and_fill_columns(df, headings):
 		df[col]='-'
 
     # Rename the columns
+
+=======
+	# print(df)
+
 	df.columns = [headings]
 #	print("rename columns",len(df.columns))
 

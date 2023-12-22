@@ -1,24 +1,34 @@
 import sys
 
 def parse_argv(argv):
-    opts = {}
+    options = {}
     config_path = None
-    csv_module_name = None  # Initialize the csv_module_name variable
+    csv_module_name = None
+    excel_filename = None
+    query = None
+    out_path = None
 
-    while argv:
-        if argv[0].startswith("--") or argv[0].startswith("-"):
-            option = argv[0][2:]
-            if len(argv) > 1 and not argv[1].startswith("--") and not argv[1].startswith("-"):
-                if option == 'config':
-                    config_path = argv[1]  # Set the config_path if --config is provided
-                else:
-                    opts[option] = argv[1]  # Assign the value if available
-                argv = argv[2:]
+    i = 0
+    while i < len(argv):
+        arg = argv[i]
+        if arg.startswith("--"):
+            option_name = arg[2:]
+            i += 1
+            if i < len(argv):
+                option_value = argv[i]
+                options[option_name] = option_value
             else:
-                opts[option] = None  # Assign None if no value is provided
-                argv = argv[1:]
-        else:
-            print("Error: Invalid argument", argv[0])
-            return opts, config_path
+                options[option_name] = None
+        i += 1
 
-    return opts, config_path, csv_module_name
+    return options, config_path, csv_module_name, excel_filename, query, out_path  # Add None as the sixth value
+
+# Usage example:
+
+command_line_arguments = sys.argv[1:]  # Get the command line arguments passed to the script
+result = parse_argv(command_line_arguments)
+
+# Access the options and their values dynamically
+options = result[0]
+for option, value in options.items():
+    print(f"{option}: {value}")

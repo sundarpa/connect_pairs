@@ -3,27 +3,23 @@
 import os
 import pandas as pd
 import argparse
-<<<<<<< HEAD
+
 from ConverterSKUtest import convert_to_binary_and_fill_columns, convert_to_binary_and_int, qultivate_sku_fill_values, coloring_y_values, fill_qultivate_enable_values, load_csv_to_excel
-=======
 from ConverterSKUtest import convert_to_binary_and_fill_columns, qultivate_sku_fill_values, coloring_y_values, fill_qultivate_enable_values, load_csv_to_excel
->>>>>>> remotes/origin/vidya
 import configparser
 import base64
 import pymysql
 import re
 import time
 import subprocess
-<<<<<<< HEAD
+
 from os.path import abspath, dirname
 import shutil
 from openpyxl import load_workbook,Workbook
 from openpyxl.styles import Font
 import shutil
 import sys
-=======
 
->>>>>>> remotes/origin/vidya
 
 
 current_wrk_dir = os.getcwd()
@@ -65,29 +61,24 @@ def decrypt(config_db):
 def get_sku_definition():
 	print("#######################################################################")
 	print("Fetching SKU Data from TSS started....")
-<<<<<<< HEAD
 	sku_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--query', 'sku_definition.query', '--out_path', block_folder_path, '--db', 'BKUP']
 	sku_out = subprocess.run(sku_command, capture_output=True, text=True)
 	print(sku_out.stdout)
 	print("SKU Data fetched from TSS successfully....")
 	print("#######################################################################")
-	
-=======
+
 	df1= pd.read_csv(block_folder_path + '/' + 'sku_definition.csv')#Todo: First read the csv  file next time it should updated one
 	print(df1)
 	print("SKU Data fetched from TSS successfully....")
 	print("#######################################################################")
 
->>>>>>> remotes/origin/vidya
 
 def remove_sku():
 	print("#######################################################################")
 	print("Removing the Sku data from TSS started....")
-<<<<<<< HEAD
 	remove_sku_command = ['/prj/vlsi/pete/ptetools/prod/utils/tssquery/2.0/tquery.py', '--project', project, '--rev', si_rev, '--featuring', featuring, '--query', 'remove_sku.query']
 	remove_command = subprocess.run(remove_sku_command, capture_output=True, text=True)
 	print(remove_command.stdout)
-=======
 	df1 = pd.read_csv(block_folder_path + '/' + 'sku_definition.csv')
 	print("Input df:", df1)
 	df1 = df1[df1['featuring'] != args.featuring]
@@ -114,7 +105,6 @@ def remove_sku():
 					column_heading.append(col)
 			x=convert_to_binary_and_int(df_qultivate_phasing,column_heading)
 			print("phasing_csv:",x)
->>>>>>> remotes/origin/vidya
 	print("Removed the sku data from TSS successfully....")
 	print("#######################################################################")
 
@@ -122,7 +112,6 @@ def insert_sku():
 	unique_rows = pd.DataFrame(columns=['sku_mcn','sku_short_name','featuring'])
 	input_file = pd.read_csv(block_folder_path)
 	sku_data_fetch_path = block_folder_path.split('/')
-<<<<<<< HEAD
 	output_path = '/'.join(sku_data_fetch_path[:-1]) + '/'
 	print("#######################################################################")
 	print("Fetching SKU Data from TSS started....")
@@ -131,11 +120,8 @@ def insert_sku():
 	print(sku_out.stdout)
 	print("SKU Data fetched from TSS successfully....")
 	print("#######################################################################")
-=======
-	# output_path = '/'.join(sku_data_fetch_path[:-1]) + '/'
 	get_sku_definition()
 	output_path = args.out_path
->>>>>>> remotes/origin/vidya
 	existing_data = tuple(pd.read_csv(output_path + '/' + 'sku_definition.csv')['featuring'].values)
 	for _, row in input_file.iterrows():
 		if row['featuring'] in existing_data:
@@ -172,7 +158,6 @@ def csv_to_excel():
 	pd.read_csv(block_folder_path + '/' + 'sku_definition.csv').to_excel(block_folder_path + '/' + 'sku_definition.xlsx',sheet_name='sku_definition',index=False)
 	# Import sheets from other Excel files
 	source_excel = block_folder_path + '/' + 'sku_definition.xlsx'
-<<<<<<< HEAD
 	sheet_names_to_import = ['sku_definition'] # List of sheet names to import
 	excel_file1 = block_folder_path + '/' + 'qultivate_phasing.xlsx'
 	for sheet_name in sheet_names_to_import:
@@ -185,8 +170,6 @@ def csv_to_excel():
 	print("CSV converted to Excel and sheets imported successfully.")
 
 def expanding_qultivate_sku_columns():
-	
-=======
 	sku_df = pd.read_excel(source_excel)
 	with pd.ExcelWriter(block_folder_path + '/' + 'qultivate_phasing.xlsx', engine='openpyxl', mode='a') as writer:
 		sku_df.to_excel(writer, sheet_name='sku_definition', index=False)
@@ -194,7 +177,6 @@ def expanding_qultivate_sku_columns():
 	print("CSV converted to Excel and sheets imported successfully.")
 
 def expanding_qultivate_sku_columns():
->>>>>>> remotes/origin/vidya
 	df_sheet2 = pd.read_csv(block_folder_path + '/' + 'sku_definition.csv')
 	column_data = df_sheet2.iloc[1:, [0,2]]
 	qultivate_sku_filtered_rows = column_data[column_data.iloc[:,0].str.startswith('SKU') == True]
@@ -216,7 +198,6 @@ def expanding_columns():
 	multi_columns = pd.MultiIndex.from_tuples([('QULTIVATE_BIN',col) if col in qultivate_bin_header else ('QULTIVATE_SKU', col) if col in qultivate_sku_header else ('', col) for col in final_df_sheet1.columns])
 	final_df_sheet1.columns = multi_columns
 	styled_df = final_df_sheet1.style.applymap(coloring_y_values, subset=pd.IndexSlice[:, final_df_sheet1.columns[6:]])
-<<<<<<< HEAD
 	# removing empty line between header and data
 	writer = pd.ExcelWriter(block_folder_path + '/' + 'qultivate_phasing.xlsx', engine='xlsxwriter')
 	styled_df.to_excel(writer, sheet_name='qultivate_phasing')
@@ -225,8 +206,6 @@ def expanding_columns():
 	
 
 def merging_columns(column_headings):
-	# Perform reverse process to convert 'Y' and 'N' to binary and integers
-	# final_df_sheet1 = pd.read_excel(block_folder_path + '/' + 'qultivate_phasing.xlsx', sheet_name='qultivate_phasing')
 	try:
 		final_df_sheet1 = pd.read_excel(block_folder_path + '/' + 'qultivate_phasing.xlsx', sheet_name='qultivate_phasing')
 	except Exception as e:
@@ -265,9 +244,6 @@ def populate_skn_data():
 	filtered_rows = column_data[column_data.iloc[:,0].str.startswith('SKU') == False]
 	column_headings = filtered_rows.iloc[:,1].tolist()
 	return column_headings
-
-
-=======
 	with pd.ExcelWriter(block_folder_path + '/' + 'qultivate_phasing.xlsx', engine='openpyxl') as writer:
 		styled_df.to_excel(writer, sheet_name='qultivate_phasing')
 
@@ -351,7 +327,6 @@ def convert_to_binary_and_int(df, headings):
 
 	return df
 
->>>>>>> remotes/origin/vidya
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description="load data from csv to excel and compare two dataframes.")
 	parser.add_argument("-pull", action="store_true", help="load csv data to excel")
@@ -367,11 +342,10 @@ if __name__ == "__main__":
 	parser.add_argument('-featuring', required=False, help='remove sku')
 	parser.add_argument('-pushfile', required=False, help='path to read the csvs')
 	parser.add_argument('-insert_sku', action="store_true", help="to insert sku")
-<<<<<<< HEAD
+
 	
 	args = parser.parse_args()
-	
-=======
+
 	parser.add_argument("-interchange", action="store_true", help="Interchange two columns")
 	parser.add_argument("-col1", required=False, help="Name of the first column to interchange")
 	parser.add_argument("-col2", required=False, help="Name of the second column to interchange")
@@ -379,7 +353,7 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 	df = pd.read_excel('qultivate_phasing.xlsx')
 
->>>>>>> remotes/origin/vidya
+
 	project = args.project
 	si_rev = args.rev
 	block_name = args.block
@@ -402,14 +376,14 @@ if __name__ == "__main__":
 		block_folder_path = pushfile
 
 	# check for out_path to end with '/'
-<<<<<<< HEAD
+
 	if not block_folder_path.endswith('/') and not block_folder_path.endswith('.csv'):
 		block_folder_path += '/'
-=======
+
 	if not args.remove_sku:
 		if not block_folder_path.endswith('/') and not block_folder_path.endswith('.csv'):
 			block_folder_path += '/'
->>>>>>> remotes/origin/vidya
+
 	
 	start_time = time.time()	
 
@@ -427,7 +401,6 @@ if __name__ == "__main__":
 	if args.push:
 		column_headings = populate_skn_data()
 		merging_columns(column_headings)
-<<<<<<< HEAD
 		columns = ['phasing_id', 'qultivate_enable', 'qultivate_value_encoded']
 		modified_df = pd.read_excel(block_folder_path + '/' + 'merged_data.xlsx', usecols=columns)
 		filtered_df = modified_df.dropna()
@@ -459,14 +432,12 @@ if __name__ == "__main__":
 			print("pymysql.err.ProgrammingError: «{}»".format(except_detail))
 		finally:
 			conn.close()
-=======
 		columns = ['phasing_id', 'pattern_name','pattern_type','qultivate_enable', 'qultivate_value_encoded']
 		modified_df = pd.read_excel(block_folder_path + '/' + 'merged_data.xlsx', usecols=columns)
 		filtered_df = modified_df.dropna()
 		filtered_df.to_csv(block_folder_path + '/' + 'phasing.csv',index=False)
 		print("Qultivate data successfully updated")
 
->>>>>>> remotes/origin/vidya
 	if args.get_sku:
 		get_sku_definition()
 	if args.update_sku:
@@ -475,8 +446,6 @@ if __name__ == "__main__":
 		remove_sku()
 	if args.insert_sku:
 		insert_sku()
-<<<<<<< HEAD
-=======
 
 	if args.interchange:
 		if args.col1 in df.columns and args.col2 in df.columns:
@@ -484,7 +453,6 @@ if __name__ == "__main__":
 		else:
 			print(f"Error: One or both of the specified columns ({args.col1}, {args.col2}) do not exist.")
 
->>>>>>> remotes/origin/vidya
 	end_time = time.time()
 	print("Script successfully completed in:", end_time - start_time, "seconds")
 

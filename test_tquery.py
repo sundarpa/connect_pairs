@@ -14,8 +14,6 @@ class TestTQuery(unittest.TestCase):
         # Clean up any resources created during the tests
         if os.path.exists(self.temp_csv_file):
             os.remove(self.temp_csv_file)
-        if os.path.exists(self.temp_excel_file):
-            os.remove(self.temp_excel_file)
 
     def test_fetch_data_from_csv(self):
         # Create a sample CSV file for testing

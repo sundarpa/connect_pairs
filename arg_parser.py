@@ -6,6 +6,7 @@ def parse_argv(argv):
     csv_module_name = None
     excel_filename = None
     query = None
+    out_path = None
 
     i = 0
     while i < len(argv):
@@ -20,7 +21,7 @@ def parse_argv(argv):
                 options[option_name] = None
         i += 1
 
-    return options, config_path, csv_module_name, excel_filename, query, None  # Add None as the sixth value
+    return options, config_path, csv_module_name, excel_filename, query, out_path  # Add None as the sixth value
 
 # Usage example:
 

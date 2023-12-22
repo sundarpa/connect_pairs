@@ -38,7 +38,6 @@ def convert_dataframe_to_json(dataframe):
     json_formatted_str = json.dumps(json_body, indent=4)
     return json_formatted_str
 
-
 # Define a function to dynamically import a module by name
 def import_module(module_name):
     try:
@@ -49,7 +48,6 @@ def import_module(module_name):
         print(f"Failed to import module '{module_name}'.")
         return None
 
-
 # Function to fetch data from a CSV file and return both the DataFrame and the CSV filename
 def fetch_data_from_csv(csv_filename):
     try:
@@ -59,8 +57,6 @@ def fetch_data_from_csv(csv_filename):
     except Exception as e:
         print(f"Error reading CSV file: {str(e)}")
         return None
-
-
 # Function to fetch data from an Excel file and return a dictionary of DataFrames
 def fetch_data_from_excel(excel_filename):
     try:
@@ -74,7 +70,6 @@ def fetch_data_from_excel(excel_filename):
     except Exception as e:
         print(f"Error reading Excel file: {str(e)}")
         return None
-
 
 # Parse command-line arguments using the imported function
 myargs, config_path, csv_module_name, excel_filename, query, out_path = parse_argv(sys.argv[1:])
@@ -168,15 +163,16 @@ if __name__ == '__main__':
                             # check if json is in myargs
                             if 'json' in myargs:
                                 json_formatted_str = convert_dataframe_to_json(df)
-                                json_formatted_results = [json_formatted_str]
-
-                                # Print or return JSON results directly
-                                print(json_formatted_results)
+                                print("json output is:",json_formatted_str)
 
                             else:
                                 # Dynamically import the module for JSON data
-                                json_module_name = myargs.get('json_module', 'reg')  # Default to 'reg' if not specified
-                                imported_module_json = import_module(json_module_name)
+                                json_module_name = myargs.get('json_module')
+                                if json_module_name is None:
+                                    print("Please provide a Input python file name which will be used as Json module")
+                                else:
+                                    imported_module_json = import_module(json_module_name)
+                                # imported_module_json = import_module(json_module_name)
 
                                 if imported_module_json:
                                     if hasattr(imported_module_json, "main") and callable(

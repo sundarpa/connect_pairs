@@ -76,14 +76,20 @@ class TestTQueryScript(unittest.TestCase):
         command = "python tquery.py --csvfile incorrect_file.csv"
         result = subprocess.run(command, capture_output=True, text=True, shell=True)
 
-        # Check if the process failed (non-zero exit code)
+        # # Check if the process failed (non-zero exit code)
+        # self.assertNotEqual(result.returncode, 0)
+        #
+        # # Assuming 'fetch_data_from_csv' returns None for a failing scenario
+        # data_from_csv = fetch_data_from_csv('incorrect_file.csv')
+        #
+        # # Check if the function returned None for a failing scenario
+        # self.assertIsNone(data_from_csv, "Expected fetch_data_from_csv to return None for an incorrect CSV file.")
+
+        # Check if "Failed to import module" is in the captured output, indicating an error
+        self.assertIn("Error", result.stderr)
+
+        # Check if the script returns a non-zero exit code, indicating failure
         self.assertNotEqual(result.returncode, 0)
-
-        # Assuming 'fetch_data_from_csv' returns None for a failing scenario
-        data_from_csv = fetch_data_from_csv('incorrect_file.csv')
-
-        # Check if the function returned None for a failing scenario
-        self.assertIsNone(data_from_csv, "Expected fetch_data_from_csv to return None for an incorrect CSV file.")
 
     def test_excelfile_command(self):
         command = "python tquery.py --excelfile Data.xlsx"

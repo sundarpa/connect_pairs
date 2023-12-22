@@ -1,6 +1,6 @@
 import unittest
 import mysql.connector
-import csv
+import vidya_1
 
 class TestSQLQuery(unittest.TestCase):
 

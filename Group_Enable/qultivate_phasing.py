@@ -11,8 +11,6 @@ import re
 import time
 import subprocess
 
-
-
 current_wrk_dir = os.getcwd()
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)

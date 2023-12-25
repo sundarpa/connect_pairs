@@ -163,7 +163,7 @@ if __name__ == '__main__':
                             # check if json is in myargs
                             if 'json' in myargs:
                                 json_formatted_str = convert_dataframe_to_json(df)
-                                print("json output is:",json_formatted_str)
+                                print("json output is:", json_formatted_str)
 
                             else:
                                 # Dynamically import the module for JSON data

@@ -17,8 +17,6 @@ import random
 import string
 import argparse
 from os.path import abspath, dirname
-<<<<<<< HEAD
-=======
 from arg_parser import parse_argv  # Import the parse_argv function from the external module
 from query import openquery
 from connect_pairs import main
@@ -28,14 +26,14 @@ import warnings
 import subprocess
 
 warnings.filterwarnings("ignore")
->>>>>>> remotes/origin/vidya
+
 
 current_wrk_dir = os.getcwd()
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
 
-<<<<<<< HEAD
+
 def getopts(argv):
 	
 	opts = {}
@@ -83,7 +81,7 @@ def convert_dataframe_to_json(dataframe):
     json_body = json.loads(json_data)
     json_formatted_str = json.dumps(json_body, indent=4)
     return json_formatted_str
->>>>>>> remotes/origin/vidya
+
 
 # Define a function to dynamically import a module by name
 def import_module(module_name):
@@ -128,7 +126,6 @@ else:
 config = configparser.ConfigParser()
 config.read(CONFIG_PATH)
 
-<<<<<<< HEAD
 def decrypt(config_db):
     dec = []
     for j in config.sections():
@@ -373,13 +370,12 @@ try:
         'passwd': db_password,
         'db': db_db
     }
->>>>>>> remotes/origin/vidya
 
     conn = pymysql.connect(**db_credentials)
     conn.autocommit(True)
     print("Connected to the remote database.")
 
-<<<<<<< HEAD
+
 		for param in range(len(matchList)):
 			requiredParameters[matchList[param]] = matchList[param]  # converts to required dictionary
 		str = "tquery "
@@ -449,15 +445,12 @@ except pymysql.Error:
         print("Connected to the local database.")
     except pymysql.Error:
         print("Failed to connect to the local database.")
->>>>>>> remotes/origin/vidya
+
 
 if __name__ == '__main__':
 	queriesResult = []
 	finalSheetNames = []
-<<<<<<< HEAD
 	myargs = getopts(argv)
-	block = ""
-=======
 	block = ""
 	# json_data_dict = {}
 	start_time = time.time()
@@ -493,7 +486,6 @@ if __name__ == '__main__':
 			except ImportError:
 				print(f"Failed to import module '{csv_module_name}' for CSV data")
 
->>>>>>> remotes/origin/vidya
 	try:
 		block = myargs['block']
 	except KeyError:
@@ -532,7 +524,7 @@ if __name__ == '__main__':
 						if results :
 							df = pd.DataFrame(results, columns=[x[0] for x in cursor.description])
 							queriesResult.append(df)
-<<<<<<< HEAD
+
 							#print(queriesResult)
 							
 							sheetName = re.compile(r'^SELECT\s+.+FROM\s+([a-z_]+)')
@@ -553,7 +545,7 @@ if __name__ == '__main__':
 							os.makedirs(path, exist_ok=True)
 							for n,df in enumerate(queriesResult):
 									#print(path)
-=======
+
 							# check if json is in myargs
 							if 'json' in myargs:
 								json_formatted_str = convert_dataframe_to_json(df)
@@ -589,7 +581,7 @@ if __name__ == '__main__':
 						else:
 							print("The query result doesn't have any data to showcase")
 			cursor.close()
->>>>>>> remotes/origin/vidya
+
 
 									#print(df.to_json(orient='records'))
 									#df.to_csv(path + '_dir' + '/' + f'{finalSheetNames[n]}' + '_' + f'{filename[n]}' + '.csv', index=False)
@@ -606,10 +598,95 @@ if __name__ == '__main__':
 			print("pymysql.err.ProgrammingError: «{}»".format(except_detail))
 		finally:
 			conn.close()
-<<<<<<< HEAD
-	
 
-=======
 			end_time = time.time()
 			print("Script successfully completed in:", end_time - start_time, "seconds")
->>>>>>> remotes/origin/vidya
+=======
+                if cmdoneonly.strip():
+                    if cmdoneonly.startswith(('update', 'delete', 'insert')):
+                        try:
+                            cursor.execute(cmdoneonly)
+                            conn.commit()  # Commit the transaction if the operation is successful
+                            print("Operation completed successfully")
+                        except Exception as e:
+                            conn.rollback()  # Rollback the transaction if an error occurs
+                            print(f"Operation failed: {str(e)}")
+                            success = False  # Set the success flag to False
+                    else:
+                        cursor.execute(cmdoneonly)
+                        results = cursor.fetchall()
+                        if results:
+                            df = pd.DataFrame(results, columns=[x[0] for x in cursor.description])
+                            queriesResult.append(df)
+                            # check if json is in myargs
+                            if 'json' in myargs:
+                                json_formatted_str = convert_dataframe_to_json(df)
+                                print("json output is:", json_formatted_str)
+
+                            else:
+                                # Dynamically import the module for JSON data
+                                json_module_name = myargs.get('json_module')
+                                if json_module_name is None:
+                                    print("Please provide a Input python file name which will be used as Json module")
+                                else:
+                                    imported_module_json = import_module(json_module_name)
+                                # imported_module_json = import_module(json_module_name)
+
+                                if imported_module_json:
+                                    if hasattr(imported_module_json, "main") and callable(
+                                            imported_module_json.main):
+                                        result = imported_module_json.main(myargs, queriesResult)
+                                        print(result)  # Print or return the result as needed
+                                    else:
+                                        print(
+                                            f"Module '{json_module_name}' for JSON data does not have a 'main' function.")
+
+                                sheetName = re.compile(r'^select\s+.+from\s+([a-z_]+)')
+                                for names in sheetName.finditer(cmdoneonly):
+                                    finalSheetNames.append(names.group(1))
+                                folderName = myargs['query'][:-6]
+                                query_file = os.path.basename(myargs['query'])  # Get the query filename
+                                data = myargs.get('out_path', current_wrk_dir)
+                                # Check if there are values in double quotes
+                                double_quoted_values = re.findall(r'"([^"]*)"', cmdoneonly)
+
+                                # Use folderName as the top-level folder if there are values in double quotes, else use the current working directory
+                                base_folder = os.path.join(current_wrk_dir,
+                                                           folderName) if double_quoted_values else current_wrk_dir
+
+                                # Create a top-level folder for each value in double quotes or use folderName
+                                for value in double_quoted_values:
+                                    # Combine value and query_file to create folder structure
+                                    folder_path = os.path.join(base_folder, value, query_file)
+                                    # Ensure the folder structure exists
+                                    path = os.path.join(base_folder, folder_path)
+                                    os.makedirs(path, exist_ok=True)
+
+                                    # Save the DataFrame to a CSV file inside the folder_path
+                                    for n, df in enumerate(queriesResult):
+                                        csv_filename = os.path.join(path, f'{finalSheetNames[n]}.csv')
+                                        df.to_csv(csv_filename, index=False)
+                                    print("CSV files created successfully in", csv_filename)
+
+                                # Save the DataFrame to a CSV file in the base_folder if there are no values in double quotes
+                                if not double_quoted_values:
+                                    for n, df in enumerate(queriesResult):
+                                        csv_filename = os.path.join(base_folder, f'{finalSheetNames[n]}.csv')
+                                        df.to_csv(csv_filename, index=False)
+                                    print("CSV files created successfully in", csv_filename)
+                        else:
+                            print("The query result doesn't have any data to showcase")
+            cursor.close()
+
+            if success:
+                print("All operations completed successfully")
+            else:
+                print("Some operations failed, transaction rolled back")
+            # print("script execution completed")
+        except pymysql.err.ProgrammingError as except_detail:
+            print("pymysql.err.ProgrammingError: «{}»".format(except_detail))
+        finally:
+            conn.close()
+            end_time = time.time()
+            print("Script successfully completed in:", end_time - start_time, "seconds")
+

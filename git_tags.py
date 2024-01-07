@@ -1,12 +1,12 @@
 import requests
+from requests.auth import HTTPBasicAuth
 
-def get_file_commit_shas(owner, repo, file_path, token):
+def get_file_commit_shas(owner, repo, file_path, username, password):
     # GitHub API endpoint for commits of a file
     url = f'https://api.github.com/repos/{owner}/{repo}/commits'
 
-    # Headers with the personal access token for authentication
+    # Headers with basic authentication
     headers = {
-        'Authorization': f'token {token}',
         'Accept': 'application/vnd.github.v3+json'
     }
 
@@ -17,8 +17,8 @@ def get_file_commit_shas(owner, repo, file_path, token):
 
     print(f'GitHub API URL: {url}')
 
-    # Make a GET request to the GitHub API
-    response = requests.get(url, headers=headers, params=params)
+    # Make a GET request to the GitHub API with basic authentication
+    response = requests.get(url, headers=headers, params=params, auth=HTTPBasicAuth(username, password))
 
     # Print the full response for debugging
     print(f'Response: {response.text}')
@@ -31,18 +31,17 @@ def get_file_commit_shas(owner, repo, file_path, token):
         print(f"Error: {response.status_code}, {response.text}")
         return None
 
-def get_download_url_for_commit(owner, repo, sha, token):
+def get_download_url_for_commit(owner, repo, sha, username, password):
     # GitHub API endpoint for archive link (ZIP format)
     url = f'https://api.github.com/repos/{owner}/{repo}/zipball/{sha}'
 
-    # Headers with the personal access token for authentication
+    # Headers with basic authentication
     headers = {
-        'Authorization': f'token {token}',
         'Accept': 'application/vnd.github.v3+json'
     }
 
-    # Make a GET request to the GitHub API
-    response = requests.get(url, headers=headers, allow_redirects=False)
+    # Make a GET request to the GitHub API with basic authentication
+    response = requests.get(url, headers=headers, allow_redirects=False, auth=HTTPBasicAuth(username, password))
 
     # Check if the request was successful (status code 302 for redirect)
     if response.status_code == 302:
@@ -55,16 +54,17 @@ def get_download_url_for_commit(owner, repo, sha, token):
 owner = 'Vidya2000'
 repo = 'testing'
 file_path = "testing_1/vidya.xlsx"  # Provide the path to the specific file
-token = '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'
+username = 'Vidya2000'
+password = 'Vidya@2427'
 
-commit_info_list = get_file_commit_shas(owner, repo, file_path, token)
+commit_info_list = get_file_commit_shas(owner, repo, file_path, username, password)
 
 if commit_info_list:
     print(f'Commits for file "{file_path}":')
     for commit_info in commit_info_list:
         sha = commit_info['sha']
         timestamp = commit_info['timestamp']
-        download_url = get_download_url_for_commit(owner, repo, sha, token)
+        download_url = get_download_url_for_commit(owner, repo, sha, username, password)
         if download_url:
             print(f'Commit SHA: {sha}, Timestamp: {timestamp}, Download URL: {download_url}')
 else:

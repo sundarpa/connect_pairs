@@ -1,11 +1,20 @@
 import requests
 from requests.auth import HTTPBasicAuth
+from decouple import config
+import base64
 
-def get_file_commit_shas(owner, repo, file_path, username, password):
-    # GitHub API endpoint for commits of a file
+def get_credentials():
+    username = config('GITHUB_USERNAME')
+    password = config('GITHUB_PASSWORD')
+    return username, password
+
+def encode_credentials(username, password):
+    credentials = f'{username}:{password}'
+    encoded_credentials = base64.b64encode(credentials.encode('utf-8')).decode('utf-8')
+    return encoded_credentials
+
+def get_file_commit_shas(owner, repo, file_path):
     url = f'https://api.github.com/repos/{owner}/{repo}/commits'
-
-    # Headers with basic authentication
     headers = {
         'Accept': 'application/vnd.github.v3+json'
     }
@@ -15,12 +24,11 @@ def get_file_commit_shas(owner, repo, file_path, username, password):
         'path': file_path
     }
 
-    print(f'GitHub API URL: {url}')
-
     # Make a GET request to the GitHub API with basic authentication
-    response = requests.get(url, headers=headers, params=params, auth=HTTPBasicAuth(username, password))
-
-    # Print the full response for debugging
+    credentials = get_credentials()
+    encoded_credentials = encode_credentials(*credentials)
+    auth_header = {'Authorization': f'Basic {encoded_credentials}'}
+    response = requests.get(url, headers={**headers, **auth_header}, params=params)
     print(f'Response: {response.text}')
 
     # Check if the request was successful (status code 200)
@@ -31,19 +39,18 @@ def get_file_commit_shas(owner, repo, file_path, username, password):
         print(f"Error: {response.status_code}, {response.text}")
         return None
 
-def get_download_url_for_commit(owner, repo, sha, username, password):
-    # GitHub API endpoint for archive link (ZIP format)
+def get_download_url_for_commit(owner, repo, sha):
     url = f'https://api.github.com/repos/{owner}/{repo}/zipball/{sha}'
-
-    # Headers with basic authentication
     headers = {
         'Accept': 'application/vnd.github.v3+json'
     }
 
     # Make a GET request to the GitHub API with basic authentication
-    response = requests.get(url, headers=headers, allow_redirects=False, auth=HTTPBasicAuth(username, password))
+    credentials = get_credentials()
+    encoded_credentials = encode_credentials(*credentials)
+    auth_header = {'Authorization': f'Basic {encoded_credentials}'}
+    response = requests.get(url, headers={**headers, **auth_header}, allow_redirects=False)
 
-    # Check if the request was successful (status code 302 for redirect)
     if response.status_code == 302:
         download_url = response.headers.get('Location')
         return download_url
@@ -53,18 +60,16 @@ def get_download_url_for_commit(owner, repo, sha, username, password):
 
 owner = 'Vidya2000'
 repo = 'testing'
-file_path = "testing_1/vidya.xlsx"  # Provide the path to the specific file
-username = 'Vidya2000'
-password = 'Vidya@2427'
+file_path = "testing_1/vidya.xlsx"
 
-commit_info_list = get_file_commit_shas(owner, repo, file_path, username, password)
+commit_info_list = get_file_commit_shas(owner, repo, file_path)
 
 if commit_info_list:
     print(f'Commits for file "{file_path}":')
     for commit_info in commit_info_list:
         sha = commit_info['sha']
         timestamp = commit_info['timestamp']
-        download_url = get_download_url_for_commit(owner, repo, sha, username, password)
+        download_url = get_download_url_for_commit(owner, repo, sha)
         if download_url:
             print(f'Commit SHA: {sha}, Timestamp: {timestamp}, Download URL: {download_url}')
 else:
